@@ -1,0 +1,145 @@
+name: Notificar Teams – Nueva versión de Prisma Designer
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    name: Enviar notificación a Teams
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Actualizar version.json con la nueva versión
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          CLEAN_VERSION=$(echo "$VERSION" | sed 's/^v//')
+          DATE=$(date +%Y-%m-%d)
+          NOTES="${{ github.event.release.body }}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${VERSION}/prisma-designer-${CLEAN_VERSION}.plugin"
+
+          python3 -c "
+          import json
+
+          with open('version.json', 'r') as f:
+              data = json.load(f)
+
+          data['version'] = '${CLEAN_VERSION}'
+          data['release_date'] = '${DATE}'
+          data['changelog'] = '''${NOTES}'''
+          data['download_url'] = '${DOWNLOAD_URL}'
+
+          with open('version.json', 'w') as f:
+              json.dump(data, f, indent=2, ensure_ascii=False)
+          "
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version.json
+          git commit -m "chore: update version.json to ${VERSION} [skip ci]"
+          git push
+
+      - name: Enviar notificación a Microsoft Teams
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          RELEASE_URL="${{ github.event.release.html_url }}"
+          NOTES="${{ github.event.release.body }}"
+          REPO="${{ github.repository }}"
+
+          PAYLOAD=$(python3 -c "
+          import json
+
+          version = '${VERSION}'
+          release_url = '${RELEASE_URL}'
+          notes = '''${NOTES}'''
+          repo = '${REPO}'
+
+          payload = {
+            'type': 'message',
+            'attachments': [
+              {
+                'contentType': 'application/vnd.microsoft.card.adaptive',
+                'content': {
+                  '\$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+                  'type': 'AdaptiveCard',
+                  'version': '1.4',
+                  'body': [
+                    {
+                      'type': 'TextBlock',
+                      'text': '🎨 Nueva versión de Prisma Designer',
+                      'weight': 'Bolder',
+                      'size': 'Medium',
+                      'color': 'Accent'
+                    },
+                    {
+                      'type': 'TextBlock',
+                      'text': f'**prisma-designer {version}** ya está disponible',
+                      'wrap': True
+                    },
+                    {
+                      'type': 'FactSet',
+                      'facts': [
+                        {'title': 'Versión', 'value': version},
+                        {'title': 'Repo', 'value': repo}
+                      ]
+                    },
+                    {
+                      'type': 'TextBlock',
+                      'text': '**¿Qué hay de nuevo?**',
+                      'weight': 'Bolder',
+                      'spacing': 'Medium'
+                    },
+                    {
+                      'type': 'TextBlock',
+                      'text': notes if notes else 'Ver release notes en GitHub',
+                      'wrap': True,
+                      'color': 'Default'
+                    },
+                    {
+                      'type': 'TextBlock',
+                      'text': '**Cómo actualizar:** Descarga el .plugin → Claude → Configuración → Plugins → Instalar',
+                      'wrap': True,
+                      'spacing': 'Medium',
+                      'isSubtle': True
+                    }
+                  ],
+                  'actions': [
+                    {
+                      'type': 'Action.OpenUrl',
+                      'title': '📥 Descargar plugin',
+                      'url': release_url
+                    },
+                    {
+                      'type': 'Action.OpenUrl',
+                      'title': '📋 Ver release notes',
+                      'url': release_url
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+
+          print(json.dumps(payload, ensure_ascii=False))
+          ")
+
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "$TEAMS_WEBHOOK_URL")
+
+          echo "Teams response: $HTTP_STATUS"
+
+          if [ "$HTTP_STATUS" != "200" ] && [ "$HTTP_STATUS" != "202" ]; then
+            echo "❌ Error al enviar notificación a Teams (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
+
+          echo "✅ Notificación enviada a Teams correctamente"

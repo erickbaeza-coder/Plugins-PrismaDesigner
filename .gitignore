@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Node (prisma-mcp)
+node_modules/
+npm-debug.log*
+
+# Archivos temporales de build
+*.tmp
+*.zip.bak
+
+# Variables de entorno locales
+.env
+.env.local

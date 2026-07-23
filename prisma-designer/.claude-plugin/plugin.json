@@ -1,0 +1,9 @@
+{
+  "name": "prisma-designer",
+  "version": "2.0.0",
+  "description": "Plugin para diseñadores UX que trabajan con el sistema de diseño Prisma de Cencosud. Convierte DS3 JSON en pantallas directamente en Figma usando el catálogo de Prisma-Components — sin plugins intermedios. Incluye validación, resolución de componentes y sync del catálogo.",
+  "author": {
+    "name": "Whitelabel UX Team · Cencosud"
+  },
+  "keywords": ["prisma", "figma", "ds3", "design-system", "cencosud", "ux", "use-figma", "direct-to-figma"]
+}

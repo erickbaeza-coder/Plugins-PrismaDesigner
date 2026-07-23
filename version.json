@@ -1,0 +1,7 @@
+{
+  "version": "2.0.0",
+  "release_date": "2026-07-23",
+  "changelog": "v2.0 — Primera versión del plugin Prisma Designer. Skills: crear-pantallas, resolver-componente, sync-prisma, validar-ds3. Integración directa con Figma vía MCP.",
+  "download_url": "https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest/download/prisma-designer-v2.0.0.plugin",
+  "min_claude_version": "claude-sonnet-4-6"
+}
