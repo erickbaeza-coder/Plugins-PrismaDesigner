@@ -16,27 +16,38 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Actualizar version.json con la nueva versión
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+          NOTES: ${{ github.event.release.body }}
+          REPO: ${{ github.repository }}
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
           CLEAN_VERSION=$(echo "$VERSION" | sed 's/^v//')
           DATE=$(date +%Y-%m-%d)
-          NOTES="${{ github.event.release.body }}"
-          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${VERSION}/prisma-designer-${CLEAN_VERSION}.plugin"
+          DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/prisma-designer-${CLEAN_VERSION}.plugin"
 
-          python3 -c "
-          import json
+          export CLEAN_VERSION DATE DOWNLOAD_URL
+
+          python3 << 'PYEOF'
+          import json, os
+
+          clean_version = os.environ['CLEAN_VERSION']
+          date = os.environ['DATE']
+          notes = os.environ.get('NOTES', '')
+          download_url = os.environ['DOWNLOAD_URL']
 
           with open('version.json', 'r') as f:
               data = json.load(f)
 
-          data['version'] = '${CLEAN_VERSION}'
-          data['release_date'] = '${DATE}'
-          data['changelog'] = '''${NOTES}'''
-          data['download_url'] = '${DOWNLOAD_URL}'
+          data['version'] = clean_version
+          data['release_date'] = date
+          data['changelog'] = notes
+          data['download_url'] = download_url
 
           with open('version.json', 'w') as f:
               json.dump(data, f, indent=2, ensure_ascii=False)
-          "
+
+          print(f"✅ version.json actualizado a v{clean_version}")
+          PYEOF
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -47,19 +58,18 @@ jobs:
       - name: Enviar notificación a Microsoft Teams
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          VERSION: ${{ github.event.release.tag_name }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+          NOTES: ${{ github.event.release.body }}
+          REPO: ${{ github.repository }}
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          RELEASE_URL="${{ github.event.release.html_url }}"
-          NOTES="${{ github.event.release.body }}"
-          REPO="${{ github.repository }}"
+          PAYLOAD=$(python3 << 'PYEOF'
+          import json, os
 
-          PAYLOAD=$(python3 -c "
-          import json
-
-          version = '${VERSION}'
-          release_url = '${RELEASE_URL}'
-          notes = '''${NOTES}'''
-          repo = '${REPO}'
+          version = os.environ['VERSION']
+          release_url = os.environ['RELEASE_URL']
+          notes = os.environ.get('NOTES', '') or 'Ver release notes en GitHub'
+          repo = os.environ['REPO']
 
           payload = {
             'type': 'message',
@@ -67,7 +77,7 @@ jobs:
               {
                 'contentType': 'application/vnd.microsoft.card.adaptive',
                 'content': {
-                  '\$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+                  '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
                   'type': 'AdaptiveCard',
                   'version': '1.4',
                   'body': [
@@ -98,7 +108,7 @@ jobs:
                     },
                     {
                       'type': 'TextBlock',
-                      'text': notes if notes else 'Ver release notes en GitHub',
+                      'text': notes,
                       'wrap': True,
                       'color': 'Default'
                     },
@@ -128,7 +138,8 @@ jobs:
           }
 
           print(json.dumps(payload, ensure_ascii=False))
-          ")
+          PYEOF
+          )
 
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Content-Type: application/json" \
