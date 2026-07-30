@@ -6,10 +6,29 @@ on:
 
 jobs:
   notify:
-    name: Enviar notificación a Teams
+    name: Build, subir asset y notificar Teams
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Build plugin
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+        run: |
+          VER="${VERSION#v}"
+          chmod +x build.sh
+          ./build.sh "$VER"
+
+      - name: Subir plugin al release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ github.event.release.tag_name }}
+        run: |
+          VER="${VERSION#v}"
+          gh release upload "$VERSION" "releases/prisma-designer-v${VER}.plugin" --clobber
+
       - name: Enviar notificación a Microsoft Teams
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
@@ -17,12 +36,14 @@ jobs:
           RELEASE_URL: ${{ github.event.release.html_url }}
           NOTES: ${{ github.event.release.body }}
           REPO: ${{ github.repository }}
+          DOWNLOAD_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/prisma-designer-${{ github.event.release.tag_name }}.plugin
         run: |
           PAYLOAD=$(python3 << 'PYEOF'
           import json, os
 
           version = os.environ['VERSION']
           release_url = os.environ['RELEASE_URL']
+          download_url = os.environ['DOWNLOAD_URL']
           notes = os.environ.get('NOTES', '') or 'Ver release notes en GitHub'
           repo = os.environ['REPO']
 
@@ -79,7 +100,7 @@ jobs:
                     {
                       'type': 'Action.OpenUrl',
                       'title': 'Descargar plugin',
-                      'url': release_url
+                      'url': download_url
                     },
                     {
                       'type': 'Action.OpenUrl',
