@@ -8,6 +8,8 @@ jobs:
   notify:
     name: Build, subir asset y notificar Teams
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repo
