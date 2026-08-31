@@ -2,7 +2,7 @@
   "mcpServers": {
     "prisma-mcp": {
       "command": "node",
-      "args": ["/Users/ebaezaroa/Desktop/Cencosud 2026/Discovery Agentico/Prisma MCP/src/index.js"],
+      "args": ["/Users/ebaezaroa/Desktop/Cencosud 2026/Proyectos Claude/Discovery Agentico/06_Repos_GitHub/Plugins-PrismaDesigner/prisma-mcp/src/index.js"],
       "env": {
         "FIGMA_TOKEN": "${FIGMA_TOKEN}"
       }

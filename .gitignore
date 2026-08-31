@@ -14,3 +14,8 @@ npm-debug.log*
 .env
 .env.local
 releases/zi3nFELQ
+
+# Prisma MCP dependencies (install with npm install)
+prisma-mcp/node_modules/
+# Temp build artifacts
+prisma-mcp-src/

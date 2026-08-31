@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prisma MCP — Guía de Uso</title>
+<style>
+  :root {
+    --brand: #2563EB;
+    --brand-dark: #1E40AF;
+    --brand-light: #EFF6FF;
+    --brand-border: #BFDBFE;
+    --success: #16A34A;
+    --success-light: #F0FDF4;
+    --success-border: #BBF7D0;
+    --warning: #D97706;
+    --warning-light: #FFFBEB;
+    --warning-border: #FDE68A;
+    --danger: #DC2626;
+    --neutral-50: #F8FAFC;
+    --neutral-100: #F1F5F9;
+    --neutral-200: #E2E8F0;
+    --neutral-300: #CBD5E1;
+    --neutral-500: #64748B;
+    --neutral-600: #475569;
+    --neutral-700: #334155;
+    --neutral-900: #0F172A;
+    --code-bg: #0F172A;
+    --code-text: #E2E8F0;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--neutral-700);
+    background: var(--neutral-50);
+  }
+
+  /* ── Hero ───────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #3B82F6 100%);
+    color: white;
+    padding: 56px 48px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    background: rgba(255,255,255,.06);
+    border-radius: 50%;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: 40%;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,.04);
+    border-radius: 50%;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  .hero h1 span { opacity: .7; }
+
+  .hero-sub {
+    font-size: 16px;
+    opacity: .85;
+    max-width: 520px;
+    line-height: 1.5;
+    margin-bottom: 28px;
+  }
+
+  .hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hero-tag {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* ── Layout ─────────────────────────────────────── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+
+  /* ── Section ────────────────────────────────────── */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .step-number {
+    width: 30px; height: 30px;
+    background: var(--brand);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .section-label h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--neutral-900);
+    letter-spacing: -.3px;
+  }
+
+  .section-label .section-desc {
+    font-size: 13px;
+    color: var(--neutral-500);
+    margin-top: 1px;
+  }
+
+  /* ── Card ───────────────────────────────────────── */
+  .card {
+    background: white;
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .card + .card { margin-top: 12px; }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-body {
+    font-size: 14px;
+    color: var(--neutral-600);
+    line-height: 1.6;
+  }
+
+  /* ── Code block ─────────────────────────────────── */
+  .code-block {
+    background: var(--code-bg);
+    border-radius: var(--radius-sm);
+    padding: 18px 20px;
+    margin: 12px 0;
+    position: relative;
+    overflow-x: auto;
+  }
+
+  .code-block pre {
+    font-family: 'SF Mono', 'Consolas', 'Courier New', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--code-text);
+    white-space: pre;
+  }
+
+  .code-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 6px;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.15);
+    color: rgba(255,255,255,.7);
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .copy-btn:hover { background: rgba(255,255,255,.18); color: white; }
+  .copy-btn.copied { color: #4ADE80; border-color: rgba(74,222,128,.3); }
+
+  /* ── Info / Warning / Success boxes ────────────── */
+  .info-box {
+    background: var(--brand-light);
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-size: 13.5px;
+    color: var(--brand-dark);
+    line-height: 1.6;
+  }
+
+  .info-box + .info-box { margin-top: 8px; }
+
+  .warn-box {
+    background: var(--warning-light);
+    border: 1px solid var(--warning-border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-size: 13.5px;
+    color: #92400E;
+    line-height: 1.6;
+  }
+
+  .success-box {
+    background: var(--success-light);
+    border: 1px solid var(--success-border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-size: 13.5px;
+    color: #14532D;
+    line-height: 1.6;
+  }
+
+  /* ── Inline code ────────────────────────────────── */
+  code {
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 12px;
+    background: var(--neutral-100);
+    border: 1px solid var(--neutral-200);
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: var(--brand-dark);
+  }
+
+  /* ── Tool cards ─────────────────────────────────── */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 640px) { .tools-grid { grid-template-columns: 1fr; } }
+
+  .tool-card {
+    background: white;
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    transition: border-color .15s, box-shadow .15s;
+    cursor: default;
+  }
+
+  .tool-card:hover {
+    border-color: var(--brand-border);
+    box-shadow: var(--shadow-md);
+  }
+
+  .tool-name {
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brand);
+    background: var(--brand-light);
+    border-radius: 4px;
+    padding: 2px 8px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  .tool-desc {
+    font-size: 13px;
+    color: var(--neutral-600);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+
+  .tool-when {
+    font-size: 11.5px;
+    color: var(--neutral-500);
+    font-style: italic;
+  }
+
+  /* ── Flow diagram ───────────────────────────────── */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .flow-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--brand);
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+
+  .flow-line {
+    width: 10px;
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .flow-connector {
+    width: 2px;
+    height: 20px;
+    background: var(--neutral-200);
+    margin: 0 4px;
+  }
+
+  .flow-content {
+    flex: 1;
+    padding-bottom: 16px;
+  }
+
+  .flow-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin-bottom: 2px;
+  }
+
+  .flow-sub {
+    font-size: 13px;
+    color: var(--neutral-500);
+  }
+
+  /* ── Architecture ───────────────────────────────── */
+  .arch-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .arch-node {
+    background: white;
+    border: 1.5px solid var(--neutral-200);
+    border-radius: var(--radius-sm);
+    padding: 12px 24px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--neutral-700);
+    text-align: center;
+    min-width: 220px;
+    box-shadow: var(--shadow);
+  }
+
+  .arch-node.primary {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: white;
+  }
+
+  .arch-node.secondary {
+    background: var(--brand-light);
+    border-color: var(--brand-border);
+    color: var(--brand-dark);
+  }
+
+  .arch-node sub {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    opacity: .75;
+    margin-top: 2px;
+  }
+
+  .arch-arrow {
+    font-size: 18px;
+    color: var(--neutral-300);
+    line-height: 1;
+    padding: 4px 0;
+  }
+
+  .arch-split {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .arch-split-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    flex: 1;
+  }
+
+  /* ── Table ──────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  th {
+    background: var(--neutral-50);
+    border: 1px solid var(--neutral-200);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  td {
+    border: 1px solid var(--neutral-200);
+    padding: 10px 14px;
+    color: var(--neutral-700);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  tr:hover td { background: var(--neutral-50); }
+
+  /* ── Tabs ───────────────────────────────────────── */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--neutral-100);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    margin-bottom: 16px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 7px 12px;
+    border: none;
+    background: none;
+    border-radius: 5px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--neutral-500);
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .tab-btn.active {
+    background: white;
+    color: var(--brand);
+    box-shadow: var(--shadow);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Accordion ──────────────────────────────────── */
+  .accordion-item {
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .accordion-btn {
+    width: 100%;
+    background: white;
+    border: none;
+    padding: 14px 18px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--neutral-900);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background .15s;
+  }
+
+  .accordion-btn:hover { background: var(--neutral-50); }
+  .accordion-btn.open { background: var(--brand-light); color: var(--brand-dark); }
+
+  .accordion-icon { font-size: 18px; transition: transform .2s; }
+  .accordion-btn.open .accordion-icon { transform: rotate(180deg); }
+
+  .accordion-body {
+    display: none;
+    padding: 0 18px 18px;
+    background: white;
+    border-top: 1px solid var(--neutral-100);
+    font-size: 13.5px;
+    color: var(--neutral-600);
+    line-height: 1.65;
+  }
+
+  .accordion-body.open { display: block; }
+
+  /* ── Misc ───────────────────────────────────────── */
+  strong { color: var(--neutral-900); font-weight: 700; }
+  a { color: var(--brand); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  .tag-new { background: #ECFDF5; color: #065F46; border: 1px solid #6EE7B7; }
+  .tag-required { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+  .tag-optional { background: var(--neutral-100); color: var(--neutral-500); border: 1px solid var(--neutral-200); }
+
+  hr { border: none; border-top: 1px solid var(--neutral-200); }
+
+  .highlight { background: #FEFCE8; border-bottom: 2px solid #FDE047; }
+
+  footer {
+    background: var(--neutral-900);
+    color: var(--neutral-500);
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    margin-top: 0;
+  }
+
+  footer strong { color: var(--neutral-300); }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <rect x="0.5" y="0.5" width="3.5" height="3.5" rx="0.8" fill="white" opacity=".9"/>
+      <rect x="6" y="0.5" width="3.5" height="3.5" rx="0.8" fill="white" opacity=".6"/>
+      <rect x="0.5" y="6" width="3.5" height="3.5" rx="0.8" fill="white" opacity=".6"/>
+      <rect x="6" y="6" width="3.5" height="3.5" rx="0.8" fill="white" opacity=".3"/>
+    </svg>
+    Whitelabel UX Team · Cencosud · v2.0
+  </div>
+  <h1>Prisma MCP <span>Server</span></h1>
+  <p class="hero-sub">
+    Conecta Claude directamente con Prisma-Components y Figma.<br>
+    Genera frames reales en Figma desde DS3 JSON — sin plugins intermedios.
+  </p>
+  <div class="hero-tags">
+    <span class="hero-tag">🧠 Claude + MCP</span>
+    <span class="hero-tag">🎨 Prisma Design System</span>
+    <span class="hero-tag">⚡ DS3 Agéntico</span>
+    <span class="hero-tag">📐 use_figma Direct</span>
+    <span class="hero-tag">🎨 Brand Mode Auto</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ── Qué es ───────────────────────────── -->
+  <section>
+    <div class="section-label">
+      <div style="width:30px;height:30px;background:var(--neutral-100);border:1px solid var(--neutral-200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+      <div>
+        <h2>¿Qué es Prisma MCP?</h2>
+        <div class="section-desc">Un servidor MCP instalado en Claude que entiende tu design system</div>
+      </div>
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-node primary">Claude (Cowork)<sub>Acá trabajás vos</sub></div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-node secondary">Prisma MCP Server<sub>Catálogo · Resolver · DS3 Builder · Script Generator</sub></div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-split">
+        <div class="arch-split-col">
+          <div class="arch-node">Figma REST API<sub>Lee la librería Prisma</sub></div>
+        </div>
+        <div class="arch-split-col">
+          <div class="arch-node" style="border-color:var(--brand-border);background:var(--brand-light);">use_figma (Figma MCP)<sub>Crea frames directo en Figma</sub></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;" class="info-box">
+      <strong>En la práctica:</strong> le decís a Claude "convertí este DS3 en pantallas" y el MCP resuelve los componentes, genera el script y lo ejecuta directo en Figma vía <code>use_figma</code> — sin plugins intermedios, sin copiar y pegar JSON, con brand mode aplicado automáticamente.
+    </div>
+  </section>
+
+  <!-- ── Setup ─────────────────────────────── -->
+  <section>
+    <div class="section-label">
+      <div class="step-number">1</div>
+      <div>
+        <h2>Instalación</h2>
+        <div class="section-desc">3 pasos · 5 minutos</div>
+      </div>
+    </div>
+
+    <!-- Paso A -->
+    <div class="card">
+      <div class="card-title">
+        <span style="color:var(--brand)">A.</span> Clonar o copiar la carpeta del MCP en tu máquina
+      </div>
+      <div class="card-body" style="margin-bottom:12px;">
+        El MCP es una carpeta con código Node.js. Necesitás tenerla en tu computadora para que funcione.
+      </div>
+      <div class="tabs" style="margin-bottom:12px;">
+        <button class="tab-btn active" onclick="switchTab(this,'tab-install-git')">Desde Git (recomendado)</button>
+        <button class="tab-btn" onclick="switchTab(this,'tab-install-copy')">Desde carpeta compartida</button>
+      </div>
+      <div id="tab-install-git" class="tab-panel active">
+        <div class="code-label">Terminal</div>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          <pre>git clone [URL_DEL_REPO] prisma-mcp
+cd prisma-mcp
+npm install</pre>
+        </div>
+        <div class="info-box">Pedile al lead de diseño la URL del repositorio privado del equipo.</div>
+      </div>
+      <div id="tab-install-copy" class="tab-panel">
+        <div class="card-body" style="margin-bottom:8px;">
+          Copiá la carpeta <code>Prisma MCP</code> a tu máquina (Desktop, Documentos, o donde prefieras). Después:
+        </div>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          <pre>cd "[ruta donde copiaste la carpeta]/Prisma MCP"
+npm install</pre>
+        </div>
+        <div class="info-box">Ejemplo: <code>cd ~/Desktop/Prisma MCP && npm install</code></div>
+      </div>
+      <div style="margin-top:12px;" class="success-box">✓ Solo necesita instalarse una vez. Después no es necesario correrlo de nuevo.</div>
+    </div>
+
+    <!-- Paso B -->
+    <div class="card">
+      <div class="card-title">
+        <span style="color:var(--brand)">B.</span> Obtener tu Figma Personal Access Token
+      </div>
+      <div class="card-body" style="margin-bottom:12px;">
+        El MCP necesita este token para leer tu librería de Prisma-Components.
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <div>
+            <div class="flow-dot"></div>
+            <div class="flow-line"><div class="flow-connector"></div></div>
+          </div>
+          <div class="flow-content">
+            <div class="flow-title">Abrí Figma en el browser</div>
+            <div class="flow-sub"><a href="https://www.figma.com" target="_blank">figma.com</a> → tu foto de perfil (arriba a la izquierda)</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div>
+            <div class="flow-dot"></div>
+            <div class="flow-line"><div class="flow-connector"></div></div>
+          </div>
+          <div class="flow-content">
+            <div class="flow-title">Settings → Security</div>
+            <div class="flow-sub">En el menú de tu cuenta, ir a <strong>Settings</strong> y luego a la tab <strong>Security</strong></div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div>
+            <div class="flow-dot"></div>
+            <div class="flow-line"><div class="flow-connector"></div></div>
+          </div>
+          <div class="flow-content">
+            <div class="flow-title">Personal access tokens → Generate new token</div>
+            <div class="flow-sub">Nombralo "Prisma MCP" y copiá el token que genera (empieza con <code>figd_</code>)</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div><div class="flow-dot"></div></div>
+          <div class="flow-content">
+            <div class="flow-title">Guardalo en un lugar seguro</div>
+            <div class="flow-sub">Solo se muestra una vez — si lo perdés tenés que generar uno nuevo</div>
+          </div>
+        </div>
+      </div>
+      <div class="warn-box">⚠️ No compartas este token ni lo commiteés a Git. Tiene acceso de escritura a tus archivos de Figma.</div>
+    </div>
+
+    <!-- Paso C -->
+    <div class="card">
+      <div class="card-title">
+        <span style="color:var(--brand)">C.</span> Registrar el MCP en Claude Cowork
+      </div>
+      <div class="card-body" style="margin-bottom:12px;">
+        Abrí (o creá) el archivo <code>~/.claude/mcp_settings.json</code> y agregá esta config.<br>
+        <strong>Reemplazá los dos valores marcados con tu información real.</strong>
+      </div>
+      <div class="code-label">~/.claude/mcp_settings.json</div>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        <pre>{
+  "mcpServers": {
+    "prisma-mcp": {
+      "command": "node",
+      "args": [
+        "<span style="color:#FCD34D">/ruta/a/tu/carpeta</span>/Prisma MCP/src/index.js"
+      ],
+      "env": {
+        "FIGMA_TOKEN": "<span style="color:#FCD34D">figd_TU_TOKEN_AQUI</span>"
+      }
+    }
+  }
+}</pre>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div class="card-title" style="font-size:13px;margin-bottom:10px;">¿Cómo sé cuál es mi ruta?</div>
+        <div class="card-body" style="margin-bottom:8px;">Abrí Terminal y corré este comando — te imprime la ruta exacta donde está el archivo:</div>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          <pre>find ~ -name "index.js" -path "*/Prisma MCP/*" 2>/dev/null</pre>
+        </div>
+        <div class="card-body" style="margin-top:8px;">Copiá esa ruta y pegala en el campo <code>args</code> del JSON de arriba.</div>
+      </div>
+
+      <div style="margin-top:12px;" class="info-box">
+        Reemplazá <code>figd_TU_TOKEN_AQUI</code> con el token que generaste en el paso B.<br>
+        Si ya tenés otros MCPs configurados, agregá <code>prisma-mcp</code> dentro del objeto <code>mcpServers</code> existente — no reemplaces todo el archivo.
+      </div>
+      <div style="margin-top:12px;" class="warn-box">
+        <strong>Después de guardar:</strong> reiniciá Cowork para que cargue el nuevo MCP.
+      </div>
+    </div>
+
+    <!-- Paso D — Verificar FIGMA_TOKEN -->
+    <div class="card">
+      <div class="card-title">
+        <span style="color:var(--brand)">D.</span> Verificar que el FIGMA_TOKEN está activo
+      </div>
+      <div class="card-body" style="margin-bottom:12px;">
+        Podés verificar si ya tenés el token configurado antes de editarlo. Abrí Terminal:
+      </div>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        <pre>echo $FIGMA_TOKEN</pre>
+      </div>
+      <div class="card-body" style="margin-top:8px;">Si devuelve vacío, el token no está. Agregalo en <code>~/.zshrc</code>:</div>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        <pre>echo 'export FIGMA_TOKEN="figd_TU_TOKEN_AQUI"' >> ~/.zshrc
+source ~/.zshrc</pre>
+      </div>
+      <div class="success-box" style="margin-top:10px;">✓ También podés poner el token directamente en el <code>mcp_settings.json</code> — funciona igual.</div>
+    </div>
+  </section>
+
+  <!-- ── Verificar instalación ──────────────── -->
+  <section>
+    <div class="section-label">
+      <div class="step-number">2</div>
+      <div>
+        <h2>Verificar que funciona</h2>
+        <div class="section-desc">Probá el MCP con este comando en Claude</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Escribí esto en el chat de Cowork:</div>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        <pre>Usá el Prisma MCP y listá los componentes del grupo "Buttons"</pre>
+      </div>
+      <div class="card-body">Si el MCP está instalado correctamente, Claude va a responder con la lista de botones del catálogo Prisma sin necesidad de buscar en ningún archivo.</div>
+      <div style="margin-top:12px;" class="success-box">
+        <strong>Respuesta esperada:</strong><br>
+        <code>Buttons > Button-Primary · Size=Lg · State=Default</code><br>
+        <code>Buttons > Button-Secondary · Size=Md · State=Default</code><br>
+        <code>Buttons > Button-Tertiary · Size=Md · State=Default</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Flujo de uso ───────────────────────── -->
+  <section>
+    <div class="section-label">
+      <div class="step-number">3</div>
+      <div>
+        <h2>Flujos de uso</h2>
+        <div class="section-desc">Dos caminos para generar pantallas en Figma</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this, 'tab-ds3')">Desde DS3 JSON</button>
+      <button class="tab-btn" onclick="switchTab(this, 'tab-prompts')">Desde Prompts</button>
+      <button class="tab-btn" onclick="switchTab(this, 'tab-caso')">🧪 Caso real · TFM Events</button>
+    </div>
+
+    <div id="tab-ds3" class="tab-panel active">
+      <div class="card">
+        <div class="card-title">Flujo completo: DS3 JSON → Figma (directo)</div>
+        <div class="card-body" style="margin-bottom:16px;">
+          Parte del JSON que genera DS3 (<code>packets.ds3</code>). El MCP genera un script y lo ejecuta directo en Figma via <code>use_figma</code> — sin plugins intermedios.
+        </div>
+
+        <div class="flow">
+          <div class="flow-step">
+            <div>
+              <div class="flow-dot"></div>
+              <div class="flow-line"><div class="flow-connector" style="height:28px"></div></div>
+            </div>
+            <div class="flow-content">
+              <div class="flow-title">① Ejecutar DS3 en Claude</div>
+              <div class="flow-sub">Corré el paso DS3 del proceso agéntico → genera <code>design_state.json</code> con <code>packets.ds3</code></div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div>
+              <div class="flow-dot"></div>
+              <div class="flow-line"><div class="flow-connector" style="height:28px"></div></div>
+            </div>
+            <div class="flow-content">
+              <div class="flow-title">② Validar el JSON con el MCP (opcional pero recomendado)</div>
+              <div class="flow-sub">Detecta errores de componentes antes de crear</div>
+              <div class="code-block" style="margin-top:8px;">
+                <pre style="font-size:11.5px;">Usá el Prisma MCP para validar este DS3 JSON:
+[pegá el contenido de packets.ds3]</pre>
+              </div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div>
+              <div class="flow-dot"></div>
+              <div class="flow-line"><div class="flow-connector" style="height:28px"></div></div>
+            </div>
+            <div class="flow-content">
+              <div class="flow-title">③ Crear las pantallas</div>
+              <div class="flow-sub">El MCP resuelve componentes y genera el script Figma</div>
+              <div class="code-block" style="margin-top:8px;">
+                <pre style="font-size:11.5px;">Usá el Prisma MCP para crear las pantallas desde este DS3 JSON:
+[pegá el contenido de packets.ds3]</pre>
+              </div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div>
+              <div class="flow-dot"></div>
+              <div class="flow-line"><div class="flow-connector" style="height:28px"></div></div>
+            </div>
+            <div class="flow-content">
+              <div class="flow-title">④ Obtener el fileKey del archivo Figma</div>
+              <div class="flow-sub">Copiá la URL de tu archivo Figma. El fileKey es el segmento después de <code>/file/</code> o <code>/design/</code></div>
+              <div class="code-block" style="margin-top:8px;">
+                <pre style="font-size:11.5px;">https://www.figma.com/design/<span style="color:#FCD34D">c1CRpB06jcpylPtASbdv3p</span>/Nombre-del-archivo
+                                            ↑ este es el fileKey</pre>
+              </div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div><div class="flow-dot" style="background:var(--success)"></div></div>
+            <div class="flow-content">
+              <div class="flow-title" style="color:var(--success)">⑤ Ejecutar el script con use_figma</div>
+              <div class="flow-sub">Claude ejecuta el script directamente en Figma. Los frames aparecen en una nueva página nombrada <code>[proyecto] · [marca]</code> con el brand mode de la marca aplicado automáticamente.</div>
+              <div class="success-box" style="margin-top:8px;font-size:12.5px;">✅ Sin Prisma Builder. Sin Figma Make. Sin copiar y pegar JSON.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-prompts" class="tab-panel">
+      <div class="card">
+        <div class="card-title">Flujo desde Prompts de texto</div>
+        <div class="card-body" style="margin-bottom:16px;">
+          Si tenés los prompts del <code>output_ds3.md</code> pero no el JSON, el MCP los convierte automáticamente.
+        </div>
+        <div class="code-label">Ejemplo de uso en Claude</div>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          <pre>Usá el Prisma MCP para convertir estos prompts en pantallas:
+
+Pantallas:
+- P01 · Events Feed: "Pantalla principal del feed de eventos de la tienda. Muestra listado cronológico de eventos con imagen, badge de categoría, título y fecha. NavBar inferior con tabs Home, Eventos, Carrito, Cuenta."
+- P02 · Event Detail: "Detalle del evento seleccionado. Hero image full width, back navigation, badge de tipo (Members Only en verde), título, metadata de fecha-hora-lugar, descripción, CTA sticky 'Ver cómo llegar'."
+- P03 · Soft Gate: "Pantalla de detalle de evento exclusivo para miembros. Igual que P02 pero con Information Card Brand color al final para invitar a unirse al programa de membresía."
+
+Marca: The Fresh Market
+Plataforma: iOS</pre>
+        </div>
+        <div class="info-box" style="margin-top:12px;">
+          El MCP infiere los componentes Prisma correctos para cada elemento mencionado en el prompt, genera el script y lo ejecuta directo en Figma via <code>use_figma</code>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+    <div id="tab-caso" class="tab-panel">
+      <div class="card">
+        <div class="card-title">🧪 Caso real testeado — TFM Events · Dirección B</div>
+        <div class="card-body" style="margin-bottom:16px;">
+          Proyecto: <strong>The Fresh Market</strong> · Flujo: Events feed + Event detail + Members Only gate · 9 pantallas
+        </div>
+
+        <div class="flow">
+          <div class="flow-step">
+            <div><div class="flow-dot"></div><div class="flow-line"><div class="flow-connector" style="height:28px"></div></div></div>
+            <div class="flow-content">
+              <div class="flow-title">① Validación — resultado instantáneo</div>
+              <div class="flow-sub">86 componentes analizados · 0 errores · 0 warnings</div>
+              <div class="success-box" style="margin-top:8px;font-size:12.5px;">✅ JSON válido — listo para usar con Prisma Builder</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div><div class="flow-dot"></div><div class="flow-line"><div class="flow-connector" style="height:28px"></div></div></div>
+            <div class="flow-content">
+              <div class="flow-title">② Build — 9 pantallas procesadas</div>
+              <div class="flow-sub">39 componentes Prisma resueltos · 5 composiciones nuevas detectadas</div>
+              <table style="margin-top:10px;font-size:12px;">
+                <thead><tr><th>Pantalla</th><th>Fidelidad</th></tr></thead>
+                <tbody>
+                  <tr><td>P01 · Events Feed</td><td>🟡 Aproximada (3 composiciones)</td></tr>
+                  <tr><td>P02 · Event Detail General</td><td>🟡 Aproximada (1 composición)</td></tr>
+                  <tr><td>P03 · Event Detail MO Registered</td><td>🟡 Aproximada (1 composición)</td></tr>
+                  <tr><td>P04 · Members Only Gate</td><td>🟡 Aproximada (1 composición)</td></tr>
+                  <tr><td>P05 · Post-Registration Return</td><td>🟡 Aproximada (1 composición)</td></tr>
+                  <tr><td>P07 · Events Feed — MO Anonymous</td><td>🟡 Aproximada (2 composiciones)</td></tr>
+                  <tr><td>P11 · Events Feed — Skeleton</td><td>🟡 Aproximada (3 composiciones)</td></tr>
+                  <tr><td><strong>P01-Empty · Empty State</strong></td><td>✅ Fiel</td></tr>
+                  <tr><td><strong>P01-Error · Error State</strong></td><td>✅ Fiel</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div><div class="flow-dot"></div><div class="flow-line"><div class="flow-connector" style="height:28px"></div></div></div>
+            <div class="flow-content">
+              <div class="flow-title">③ Composiciones — 5 componentes nuevos con prompts listos</div>
+              <div class="flow-sub">El MCP generó automáticamente la composición DS3 + prompt de Figma Make para cada uno</div>
+              <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">
+                <code>EventCard</code>
+                <code>EventMetadata</code>
+                <code>GateContent</code>
+                <code>EventCardMO</code>
+                <code>SkeletonCard</code>
+              </div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div><div class="flow-dot" style="background:var(--success)"></div></div>
+            <div class="flow-content">
+              <div class="flow-title" style="color:var(--success)">④ Figma Make — resultado del EventCard</div>
+              <div class="flow-sub">El componente generado respeta la estructura especificada: Banner carousel + Tag neutral + Title section. Tokens CSS vinculados a variables del design system.</div>
+              <div class="info-box" style="margin-top:8px;font-size:12.5px;">
+                <strong>Nota:</strong> Al guardar los componentes creados por Figma Make como componentes locales, quedan disponibles para usarlos como instancias en las pantallas generadas por Prisma Builder.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Eficiencia del proceso ─────────────── -->
+  <section>
+    <div class="section-label">
+      <div style="width:30px;height:30px;background:var(--neutral-100);border:1px solid var(--neutral-200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">⏱</div>
+      <div>
+        <h2>Eficiencia del proceso</h2>
+        <div class="section-desc">Tiempo estimado por fase — proceso manual vs. con MCP</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Fase</th><th>Manual</th><th>Con MCP + Skills</th><th>Ganancia</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Selección de componentes Prisma</strong><br><span style="font-size:12px;color:#64748B">Buscar en Figma, decidir props exactas</span></td>
+            <td>20–40 min</td>
+            <td>~30 seg</td>
+            <td><span style="color:var(--success);font-weight:700">Alta ↑</span></td>
+          </tr>
+          <tr>
+            <td><strong>Validación del diseño</strong><br><span style="font-size:12px;color:#64748B">Revisar que los nombres y props sean correctos</span></td>
+            <td>15–30 min</td>
+            <td>&lt;5 seg</td>
+            <td><span style="color:var(--success);font-weight:700">Muy alta ↑</span></td>
+          </tr>
+          <tr>
+            <td><strong>Construcción de frames</strong><br><span style="font-size:12px;color:#64748B">Crear cada pantalla componente a componente</span></td>
+            <td>60–120 min</td>
+            <td>~30 seg (use_figma directo)</td>
+            <td><span style="color:var(--success);font-weight:700">Muy alta ↑</span></td>
+          </tr>
+          <tr>
+            <td><strong>Componentes nuevos (composiciones)</strong><br><span style="font-size:12px;color:#64748B">Decidir estructura, crear, documentar</span></td>
+            <td>Sin proceso definido</td>
+            <td>Prompt listo para Figma Make</td>
+            <td><span style="color:var(--success);font-weight:700">Alta ↑</span></td>
+          </tr>
+          <tr>
+            <td><strong>Handoff a desarrollo</strong><br><span style="font-size:12px;color:#64748B">Specs de sizing, spacing, props</span></td>
+            <td>30–60 min</td>
+            <td>JSON ya incluye layout + textOverrides</td>
+            <td><span style="color:var(--warning);font-weight:700">Media →</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:16px;" class="info-box">
+        <strong>Cómo medir en tu próximo proyecto:</strong> anotá el tiempo desde "tengo el PDR" hasta "frames listos para review". Comparalo con proyectos anteriores para tener tu propio baseline real.
+      </div>
+      <div style="margin-top:8px;" class="success-box">
+        <strong>v2.0 — flujo totalmente agéntico:</strong> el MCP escribe directo al canvas de Figma via <code>use_figma</code>. Ya no hay pasos manuales intermedios — Claude ejecuta el script, crea la página, aplica el brand mode y entrega los frames listos.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Composiciones ──────────────────────── -->
+  <section>
+    <div class="section-label">
+      <div style="width:30px;height:30px;background:var(--neutral-100);border:1px solid var(--neutral-200);border-radius:50%;display:flex;align-items:center;justify-content:circle;font-size:16px;">🧩</div>
+      <div>
+        <h2>Composiciones — componentes que no existen en Prisma</h2>
+        <div class="section-desc">Cómo el MCP maneja los componentes nuevos</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body" style="margin-bottom:16px;">
+        Cuando el DS3 define un componente que no existe en Prisma-Components (ej: <code>EventCard</code>), el MCP no lo deja como placeholder. En cambio genera dos outputs:
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="background:var(--brand-light);border:1px solid var(--brand-border);border-radius:8px;padding:16px;">
+          <div style="font-weight:700;color:var(--brand-dark);margin-bottom:8px;font-size:13px;">① Composición DS3</div>
+          <div style="font-size:12.5px;color:var(--neutral-600);line-height:1.6;">Sub-árbol de componentes Prisma existentes que aproximan el componente nuevo. Se incluye en el script de <code>use_figma</code> como frame anidado.</div>
+        </div>
+        <div style="background:var(--success-light);border:1px solid var(--success-border);border-radius:8px;padding:16px;">
+          <div style="font-weight:700;color:#14532D;margin-bottom:8px;font-size:13px;">② Auto-creado en Figma</div>
+          <div style="font-size:12.5px;color:var(--neutral-600);line-height:1.6;">El script generado incluye las composiciones y las crea directamente en el canvas. No hace falta Figma Make ni intervención manual.</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="card-title">Composiciones frecuentes (del caso TFM Events)</div>
+        <table style="margin-top:8px;">
+          <thead><tr><th>Componente</th><th>Sub-componentes Prisma</th><th>Cuándo aparece</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>EventCard</code></td>
+              <td>Banners terciarios Md + Tag + Title_section</td>
+              <td>Feed cronológico de eventos</td>
+            </tr>
+            <tr>
+              <td><code>EventMetadata</code></td>
+              <td>Location Brand × 3 (fecha, hora, lugar)</td>
+              <td>Detalle de evento</td>
+            </tr>
+            <tr>
+              <td><code>GateContent</code></td>
+              <td>Tag Green + Title_section + InformationCard Brand + Button Primary + Button Secondary</td>
+              <td>Gate de membresía</td>
+            </tr>
+            <tr>
+              <td><code>EventCardMO</code></td>
+              <td>Banners terciarios Md + Tag Green + Title_section</td>
+              <td>Card evento bloqueado (anonymous)</td>
+            </tr>
+            <tr>
+              <td><code>SkeletonCard</code></td>
+              <td>Banner principal Sm + Title_section</td>
+              <td>Estado loading del feed</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;" class="info-box">
+        <strong>Workflow recomendado:</strong> ejecutá <code>use_figma</code> con el script completo → los frames aparecen en la nueva página con brand mode aplicado → si hay composiciones, revisá el frame y ajustá a mano si hace falta.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Herramientas ───────────────────────── -->
+  <section>
+    <div class="section-label">
+      <div style="width:30px;height:30px;background:var(--neutral-100);border:1px solid var(--neutral-200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">🛠</div>
+      <div>
+        <h2>Herramientas disponibles</h2>
+        <div class="section-desc">9 tools que podés usar desde Claude</div>
+      </div>
+    </div>
+
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-name">sync_prisma_library</div>
+        <div class="tool-desc">Escanea el archivo Prisma-Components en Figma y enriquece el catálogo con los component keys reales.</div>
+        <div class="tool-when">Usar: una vez antes de empezar o cuando se actualiza la librería</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">create_screens_from_ds3</div>
+        <div class="tool-desc">Toma el <code>packets.ds3</code> JSON y genera la spec enriquecida, resuelve componentes, detecta los nuevos y produce warnings.</div>
+        <div class="tool-when">Usar: después de ejecutar el paso DS3 del proceso agéntico</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">create_screens_from_prompts</div>
+        <div class="tool-desc">Convierte prompts de texto en componentes Prisma inferidos automáticamente y genera el JSON para Prisma Builder.</div>
+        <div class="tool-when">Usar: cuando tenés los prompts del output_ds3.md pero no el JSON</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">validate_ds3_json</div>
+        <div class="tool-desc">Valida el JSON contra el catálogo Prisma y reporta errores (grupos inválidos, props inexistentes, componentes no encontrados).</div>
+        <div class="tool-when">Usar: antes de ejecutar create_screens para detectar problemas</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">list_prisma_components</div>
+        <div class="tool-desc">Lista todos los componentes disponibles en el catálogo, con filtro opcional por nombre o grupo.</div>
+        <div class="tool-when">Usar: cuando querés saber qué existe antes de diseñar</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">resolve_component</div>
+        <div class="tool-desc">Encuentra el componente Prisma que mejor coincide con una descripción en lenguaje natural. Evita errores comunes.</div>
+        <div class="tool-when">Usar: cuando no recordás el nombre exacto de un componente</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">create_local_component_spec</div>
+        <div class="tool-desc">Genera la composición DS3 y el prompt de Figma Make para un componente nuevo que no existe en Prisma.</div>
+        <div class="tool-when">Usar: cuando necesitás un componente que aún no está en la librería</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">get_figma_file_info</div>
+        <div class="tool-desc">Obtiene info de un archivo Figma: nombre, páginas disponibles, componentes locales, fecha de modificación.</div>
+        <div class="tool-when">Usar: para verificar que el archivo destino es el correcto</div>
+      </div>
+      <div class="tool-card" style="border-color:var(--brand-border);background:var(--brand-light);">
+        <div class="tool-name" style="background:white;">generate_figma_script</div>
+        <div class="tool-desc">Genera el script JavaScript completo (use_figma) desde un DS3 JSON. Crea la página, coloca los frames con los componentes Prisma resueltos y aplica el brand mode automáticamente.</div>
+        <div class="tool-when">⭐ Nuevo en v2.0 — es el paso final del flujo DS3 → Figma directo</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Errores comunes ────────────────────── -->
+  <section>
+    <div class="section-label">
+      <div style="width:30px;height:30px;background:var(--neutral-100);border:1px solid var(--neutral-200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">🐛</div>
+      <div>
+        <h2>Errores comunes y soluciones</h2>
+        <div class="section-desc">Problemas frecuentes y cómo resolverlos</div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        El MCP no aparece en Claude después de configurarlo
+        <span class="accordion-icon">⌄</span>
+      </button>
+      <div class="accordion-body">
+        <strong>Causa más común:</strong> Claude no se reinició después de editar <code>mcp_settings.json</code>.<br><br>
+        <strong>Solución:</strong> Cerrá y volvé a abrir Cowork / Claude Code completamente (no solo la ventana). Si seguís sin verlo, verificá que el JSON de la config es válido (no tiene comas extra ni comillas incorrectas).
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        Error "FIGMA_TOKEN no configurado"
+        <span class="accordion-icon">⌄</span>
+      </button>
+      <div class="accordion-body">
+        El token no está pasando bien a la variable de entorno del MCP.<br><br>
+        <strong>Verificar:</strong> en <code>mcp_settings.json</code> asegurate de que la key sea exactamente <code>FIGMA_TOKEN</code> y que el valor sea tu token completo (incluyendo el prefijo <code>figd_</code>).
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        Figma API error 403 (Unauthorized)
+        <span class="accordion-icon">⌄</span>
+      </button>
+      <div class="accordion-body">
+        El token de Figma expiró o no tiene los permisos correctos.<br><br>
+        <strong>Solución:</strong> Generá un nuevo token en Figma → Settings → Security → Personal access tokens. Actualizá el valor en <code>mcp_settings.json</code> y reiniciá Cowork.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        Componentes no encontrados al validar el DS3 JSON
+        <span class="accordion-icon">⌄</span>
+      </button>
+      <div class="accordion-body">
+        El MCP tiene un catálogo base de los componentes documentados en el DS3 skill. Si usás componentes que no están en ese catálogo, aparecen como "no encontrados".<br><br>
+        <strong>Solución:</strong> Ejecutá <code>sync_prisma_library</code> con la URL del archivo Prisma-Components real de tu team. Eso actualiza el catálogo con los componentes reales y sus keys de Figma.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        "Grupo 'Atoms >' no existe en Figma"
+        <span class="accordion-icon">⌄</span>
+      </button>
+      <div class="accordion-body">
+        El DS3 JSON tiene componentes con prefijos de diseño atómico (<code>Atoms &gt;</code>, <code>Molecules &gt;</code>, <code>Organisms &gt;</code>) que no existen en Figma.<br><br>
+        <strong>Solución:</strong> Pedile a Claude que corrija el JSON usando <code>resolve_component</code> para cada componente problemático. El MCP sugiere el nombre correcto en Prisma.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        Los frames aparecen en "Page 1" en vez de la página del proyecto
+        <span class="accordion-icon">⌄</span>
+      </button>
+      <div class="accordion-body">
+        Esto ocurría en versiones anteriores del script generado, donde <code>figma.currentPage = page</code> no funcionaba (la asignación directa no está soportada por la Figma Plugin API).<br><br>
+        <strong>En v2.0 está corregido:</strong> el script usa <code>await figma.setCurrentPageAsync(page)</code> antes de crear los frames. Si ves este problema, asegurate de que el MCP está en v2.0 o superior (reiniciá desde Settings → Developer → MCP → prisma-mcp → Restart).
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        Brand mode no se aplica a los frames generados
+        <span class="accordion-icon">⌄</span>
+      </button>
+      <div class="accordion-body">
+        Puede pasar si el DS3 JSON no tiene el campo <code>marca</code> o si el nombre no coincide exactamente con el nombre del modo en Figma.<br><br>
+        <strong>Verificar:</strong> en el DS3 JSON, el campo <code>marca</code> debe ser exactamente igual al nombre del mode en la colección "2-Style Tokens" de Figma (ej: <code>"The Fresh Market"</code>, no <code>"TFM"</code>). Si no coincide, el script aplica sin brand mode pero sin romper la creación de frames.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Referencia de componentes ─────────── -->
+  <section>
+    <div class="section-label">
+      <div style="width:30px;height:30px;background:var(--neutral-100);border:1px solid var(--neutral-200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">📚</div>
+      <div>
+        <h2>Catálogo Prisma incluido</h2>
+        <div class="section-desc">Componentes disponibles en el catálogo base del MCP</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Grupo</th>
+            <th>Componentes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Nav Bar</strong></td><td>Header (White/Color), NavBar, Search_header</td></tr>
+          <tr><td><strong>Top bar</strong></td><td>TopBar (sin título), TopBar_title</td></tr>
+          <tr><td><strong>Buttons</strong></td><td>Button-Primary Lg, Button-Secondary Md, Button-Tertiary Md</td></tr>
+          <tr><td><strong>Banners Cards</strong></td><td>Banner_principal (Sm/Md/Lg), Banners terciarios Carruseles Md</td></tr>
+          <tr><td><strong>Carrusels</strong></td><td>Hero_banner</td></tr>
+          <tr><td><strong>Categorys</strong></td><td>Category-carousel</td></tr>
+          <tr><td><strong>Title_section</strong></td><td>Con CTA, Sin CTA</td></tr>
+          <tr><td><strong>Product Card</strong></td><td>Product_card Md, Product card_list</td></tr>
+          <tr><td><strong>Sticky Button</strong></td><td>Sticky-button Horizontal</td></tr>
+          <tr><td><strong>Tags</strong></td><td>Green, Orange, Red, Blue, Neutral</td></tr>
+          <tr><td><strong>Alerts / Snackbar</strong></td><td>Alert Info, Alert Error, Snackbar Success</td></tr>
+          <tr><td><strong>Information Card</strong></td><td>State=Brand (gate), State=Default</td></tr>
+          <tr><td><strong>Promo Card</strong></td><td>Type=Arrow, Type=Button</td></tr>
+          <tr><td><strong>Empty States / Dialog</strong></td><td>Empty state, Dialog</td></tr>
+          <tr><td><strong>Location</strong></td><td>Recibe, Retira, Brand (info row), Ofertas</td></tr>
+          <tr><td><strong>Otros</strong></td><td>Quantity Selector, Bottom Sheet, Totalizer, Chips, Inputs, Select List, Payments, LevelsCards</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:12px;" class="info-box">
+        El catálogo se actualiza con los componentes reales de tu archivo al correr <code>sync_prisma_library</code>.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Ejemplos rápidos ───────────────────── -->
+  <section>
+    <div class="section-label">
+      <div style="width:30px;height:30px;background:var(--neutral-100);border:1px solid var(--neutral-200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">💬</div>
+      <div>
+        <h2>Ejemplos de comandos en Claude</h2>
+        <div class="section-desc">Copiá y pegá en el chat</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Buscar un componente</div>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        <pre>Usá el Prisma MCP y encontrá el componente correcto para: "tarjeta que invite al usuario a unirse al programa de membresía"</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Crear spec de componente nuevo</div>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        <pre>Usá el Prisma MCP para crear la spec del componente "EventCard" — una tarjeta de evento con imagen 16:9, badge de categoría en verde, título del evento y metadata de fecha y hora. Para iOS, marca The Fresh Market.</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Validar DS3 JSON antes de crear</div>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        <pre>Usá el Prisma MCP para validar este JSON contra el catálogo de Prisma y reportar cualquier error:
+{ "version": "2.0", "pantallas": [...] }</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Listar todos los componentes de navegación</div>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        <pre>Usá el Prisma MCP para listar todos los componentes del grupo "Nav Bar" y "Top bar"</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Compartir con el equipo ───────────── -->
+  <section>
+    <div class="section-label">
+      <div style="width:30px;height:30px;background:var(--neutral-100);border:1px solid var(--neutral-200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">👥</div>
+      <div>
+        <h2>Compartir con el equipo</h2>
+        <div class="section-desc">Tres opciones según el nivel de infraestructura que quieran invertir</div>
+      </div>
+    </div>
+
+    <!-- Opción 1 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="background:var(--brand);color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">Opción 1 · Recomendada</span>
+        <span class="card-title" style="margin:0;">Repositorio Git privado</span>
+      </div>
+      <div class="card-body" style="margin-bottom:12px;">
+        Subís la carpeta <code>Prisma MCP</code> a un repo privado de GitHub/GitLab. Cada diseñador clona el repo, corre <code>npm install</code> y configura su propio <code>FIGMA_TOKEN</code>.
+      </div>
+      <table style="font-size:12.5px;">
+        <thead><tr><th>Ventaja</th><th>Limitación</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Cada uno tiene el MCP en su máquina · Updates con <code>git pull</code> · Sin infraestructura extra</td>
+            <td>Cada designer tiene que clonar y correr npm install · Si alguien no tiene Node, necesita instalarlo</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="code-block" style="margin-top:12px;">
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        <pre># Cada designer hace esto una sola vez:
+git clone https://github.com/tu-org/prisma-mcp.git
+cd prisma-mcp
+npm install
+
+# Para recibir actualizaciones:
+git pull</pre>
+      </div>
+    </div>
+
+    <!-- Opción 2 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="background:var(--neutral-200);color:var(--neutral-700);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">Opción 2</span>
+        <span class="card-title" style="margin:0;">Paquete npm privado</span>
+      </div>
+      <div class="card-body" style="margin-bottom:12px;">
+        Publicás el MCP como paquete en el registry privado de npm (o GitHub Packages). Cada designer instala con un solo comando global.
+      </div>
+      <table style="font-size:12.5px;">
+        <thead><tr><th>Ventaja</th><th>Limitación</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Instalación con un comando · Versiones controladas · No hay que clonar repos</td>
+            <td>Requiere publicar en npm/GitHub Packages · Necesita acceso al registry privado</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="code-block" style="margin-top:12px;">
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        <pre># Instalación (cada designer, una vez):
+npm install -g @cencosud-ux/prisma-mcp
+
+# Config en mcp_settings.json — sin path, solo el comando:
+{
+  "mcpServers": {
+    "prisma-mcp": {
+      "command": "prisma-mcp",
+      "env": { "FIGMA_TOKEN": "figd_TU_TOKEN_AQUI" }
+    }
+  }
+}</pre>
+      </div>
+    </div>
+
+    <!-- Opción 3 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="background:#FEF3C7;color:#92400E;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">Opción 3 · Avanzada</span>
+        <span class="card-title" style="margin:0;">Servidor compartido (hosted MCP)</span>
+      </div>
+      <div class="card-body" style="margin-bottom:12px;">
+        Deployás el MCP en un servidor (Railway, Render, Fly.io) con transporte SSE. Todos los designers se conectan a la misma URL — sin instalar nada localmente.
+      </div>
+      <table style="font-size:12.5px;">
+        <thead><tr><th>Ventaja</th><th>Limitación</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Un solo servidor para todo el equipo · Updates instantáneos · Sin instalación en cada máquina</td>
+            <td>Requiere infraestructura y mantenimiento · El catálogo Prisma es compartido (no por designer)</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="code-block" style="margin-top:12px;">
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        <pre># Config en mcp_settings.json — solo una URL:
+{
+  "mcpServers": {
+    "prisma-mcp": {
+      "url": "https://prisma-mcp.tu-dominio.com/sse",
+      "headers": {
+        "Authorization": "Bearer ${FIGMA_TOKEN}"
+      }
+    }
+  }
+}</pre>
+      </div>
+      <div class="warn-box" style="margin-top:10px;">Esta opción requiere cambiar el transporte de <code>StdioServerTransport</code> a <code>SSEServerTransport</code> en el código del servidor. No es compatible con la configuración actual sin modificar <code>src/index.js</code>.</div>
+    </div>
+
+    <!-- Recomendación -->
+    <div class="success-box" style="margin-top:4px;">
+      <strong>Para el equipo hoy:</strong> la Opción 1 (Git repo) es la más simple y no requiere infraestructura. Cuando el equipo crezca o quieran centralizar actualizaciones, la Opción 3 es el paso natural siguiente.
+    </div>
+  </section>
+
+  <!-- ── Estructura de archivos ─────────────── -->
+  <section>
+    <div class="section-label">
+      <div style="width:30px;height:30px;background:var(--neutral-100);border:1px solid var(--neutral-200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">📁</div>
+      <div>
+        <h2>Estructura de archivos</h2>
+        <div class="section-desc">Lo que hay en esta carpeta</div>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <pre><span style="color:#7DD3FC">Prisma MCP/</span>
+├── <span style="color:#86EFAC">package.json</span>            ← dependencias (solo @modelcontextprotocol/sdk)
+├── <span style="color:#7DD3FC">src/</span>
+│   ├── <span style="color:#FCD34D">index.js</span>            ← servidor MCP + definición de las 8 tools
+│   ├── <span style="color:#FCD34D">prisma-catalog.js</span>   ← catálogo de 45+ componentes Prisma
+│   ├── <span style="color:#FCD34D">component-resolver.js</span>  ← motor de matching por keywords (40+ patrones)
+│   ├── <span style="color:#FCD34D">ds3-builder.js</span>      ← transformador DS3 JSON → spec enriquecida
+│   └── <span style="color:#FCD34D">figma-api.js</span>        ← cliente REST de Figma
+└── <span style="color:#7DD3FC">docs/</span>
+    └── <span style="color:#F9A8D4">guia.html</span>           ← este archivo</pre>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <strong>Prisma MCP Server v1.0</strong> · Whitelabel UX Team · Cencosud · Julio 2026<br>
+  Parte del proceso de Discovery y Diseño Agéntico
+</footer>
+
+<script>
+function copyCode(btn) {
+  const pre = btn.parentElement.querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    btn.textContent = 'Copiado ✓';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copiar';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+function switchTab(btn, panelId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+function toggleAccordion(btn) {
+  const body = btn.nextElementSibling;
+  const isOpen = btn.classList.contains('open');
+  // Cerrar todos
+  document.querySelectorAll('.accordion-btn').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.accordion-body').forEach(b => b.classList.remove('open'));
+  // Abrir el clickeado (si no estaba abierto)
+  if (!isOpen) {
+    btn.classList.add('open');
+    body.classList.add('open');
+  }
+}
+</script>
+</body>
+</html>

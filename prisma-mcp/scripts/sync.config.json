@@ -1,0 +1,7 @@
+{
+  "figmaToken": "${FIGMA_TOKEN}",
+  "figmaComponentsKey": "LnYUTRFuwWpI9phwDCSHOx",
+  "autoSync": true,
+  "checkIntervalMin": 120,
+  "minHoursBetweenSync": 1
+}

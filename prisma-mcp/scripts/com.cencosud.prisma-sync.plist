@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+  <key>Label</key>
+  <string>com.cencosud.prisma-sync</string>
+
+  <!-- Arranca el dashboard en http://localhost:7842 al iniciar sesión -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/node</string>
+    <string>/Users/ebaezaroa/Desktop/Cencosud 2026/Discovery Agentico/Prisma MCP/scripts/dashboard.js</string>
+  </array>
+
+  <!-- Se inicia automáticamente al abrir sesión en macOS -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Si crashea, se reinicia solo -->
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- PATH necesario para que git funcione en el proceso background -->
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    <key>HOME</key>
+    <string>/Users/ebaezaroa</string>
+  </dict>
+
+  <!-- Logs (opcional, para debug) -->
+  <key>StandardOutPath</key>
+  <string>/Users/ebaezaroa/Library/Logs/prisma-dashboard.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/ebaezaroa/Library/Logs/prisma-dashboard-error.log</string>
+
+</dict>
+</plist>

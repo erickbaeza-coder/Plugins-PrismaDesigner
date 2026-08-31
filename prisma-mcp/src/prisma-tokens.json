@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "source": "Tokens / Foundations",
+    "figmaFileKey": "ajTov04sBM1NsSV10A801Y",
+    "lastSync": "2026-07-10",
+    "note": "Actualizar con sync_prisma_library cuando FIGMA_TOKEN esté disponible"
+  },
+  "spacing": {
+    "none":  0,
+    "xs":    2,
+    "s":     4,
+    "m":     6,
+    "l":     8,
+    "xl":   12,
+    "2xl":  16,
+    "3xl":  20,
+    "4xl":  24,
+    "5xl":  32,
+    "6xl":  40,
+    "7xl":  48,
+    "8xl":  56,
+    "9xl":  64
+  },
+  "borderRadius": {
+    "none":  0,
+    "xs":    2,
+    "s":     4,
+    "m":     8,
+    "l":    12,
+    "xl":   16,
+    "2xl":  20,
+    "3xl":  24,
+    "full": 999
+  },
+  "screen": {
+    "width":             390,
+    "height":            844,
+    "paddingHorizontal": 16,
+    "paddingTop":         0,
+    "paddingBottom":     24,
+    "itemSpacing":       12,
+    "sectionSpacing":    24
+  },
+  "brands": ["Prisma", "Jumbo", "The Fresh Market", "Disco", "Prezunic", "Metro", "Vea", "Gbarbosa"]
+}

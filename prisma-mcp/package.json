@@ -1,0 +1,21 @@
+{
+  "name": "prisma-mcp",
+  "version": "1.0.0",
+  "description": "MCP server — Prisma Design System × DS3 × Figma",
+  "type": "module",
+  "bin": {
+    "prisma-mcp": "./src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "sync": "node scripts/sync-and-push.js",
+    "dashboard": "node scripts/dashboard.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
