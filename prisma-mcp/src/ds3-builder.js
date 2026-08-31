@@ -74,10 +74,26 @@ export class DS3Builder {
         nombre: pantalla.nombre || pantalla.name || 'Pantalla',
         total: componentes.length,
         resolved: pantallaResolved,
-        local: pantallaLocal
+        local: pantallaLocal,
+        hasSections: Array.isArray(pantalla.secciones) && pantalla.secciones.length > 0
       });
 
       pantalla.componentes = enhancedComponents;
+
+      // Preservar secciones si existen (DS3 v2 schema)
+      if (Array.isArray(pantalla.secciones)) {
+        // Validar y enriquecer componentes dentro de cada sección
+        for (const sec of pantalla.secciones) {
+          if (!sec.componentes) continue;
+          sec.componentes = sec.componentes.map(c => {
+            const compName = c.componente || c.component || '';
+            if (compName && this.catalog.exists(compName)) {
+              return { ...c, _resolved: true };
+            }
+            return { ...c };
+          });
+        }
+      }
     }
 
     // JSON enriquecido — listo para Prisma Builder

@@ -215,12 +215,101 @@ Ofrecer: "¿Querés que corra `/quality-gate` para un análisis más profundo, o
 
 ---
 
+## DS3 JSON Schema v2 — Secciones y Layouts
+
+A partir de v3.1, el DS3 JSON soporta **secciones** para agrupar componentes con layouts diferenciados.
+Si el JSON no tiene secciones explícitas, el generador las detecta automáticamente por tipo de componente.
+
+### Formato con secciones explícitas (recomendado)
+
+```json
+{
+  "pantallas": [{
+    "id": "P01",
+    "nombre": "PLP Principal",
+    "secciones": [
+      {
+        "nombre": "header",
+        "layout": "stack",
+        "componentes": [
+          { "componente": "TopBar", "rol": "navegación" }
+        ]
+      },
+      {
+        "nombre": "filtros",
+        "layout": "scroll-h",
+        "componentes": [
+          { "componente": "Chip", "contenido": "Ofertas" },
+          { "componente": "Chip", "contenido": "Frescos" }
+        ]
+      },
+      {
+        "nombre": "productos",
+        "layout": "grid-2col",
+        "padded": true,
+        "componentes": [
+          { "componente": "ProductCard", "contenido": "Producto 1" },
+          { "componente": "ProductCard", "contenido": "Producto 2" },
+          { "componente": "ProductCard", "contenido": "Producto 3" },
+          { "componente": "ProductCard", "contenido": "Producto 4" }
+        ]
+      },
+      {
+        "nombre": "accion_sticky",
+        "layout": "sticky-bottom",
+        "componentes": [
+          { "componente": "BottomBar", "rol": "navegación persistente" }
+        ]
+      }
+    ]
+  }]
+}
+```
+
+### Layouts disponibles
+
+| Layout | Qué genera en Figma |
+|---|---|
+| `stack` | Auto Layout vertical (default) — componentes apilados |
+| `grid-2col` | Grid de 2 columnas con Auto Layout horizontal por fila |
+| `scroll-h` | Contenedor horizontal con clip — para chips, filtros, categorías |
+| `sticky-bottom` | Empuja al fondo con spacer + layoutGrow — para nav bars, CTAs |
+
+### Formato con campo "seccion" por componente (alternativa)
+
+Si no usás `secciones` explícitas, podés agregar `seccion` y `layout_seccion` a cada componente:
+
+```json
+{
+  "componente": "ProductCard",
+  "seccion": "productos",
+  "layout_seccion": "grid-2col"
+}
+```
+
+### Auto-detección (sin cambios al JSON)
+
+Si el JSON no tiene ni `secciones` ni campo `seccion`, el generador detecta automáticamente:
+- **TopBar, NavBar, SearchBar** → header (full-width, sin padding)
+- **Chip, Filter, CategoryPill** → scroll horizontal
+- **ProductCard, Card_product** → grid 2 columnas
+- **BottomBar, TabBar, StickyButton** → sticky bottom
+- **Todo lo demás** → stack vertical con padding
+
+---
+
 ## Contexto técnico
 
 **El MCP escribe directamente al canvas de Figma** — no se necesita el plugin Prisma Builder ni Figma Make para los componentes del sistema de diseño. Este es el cambio central respecto al flujo anterior.
 
-**Composiciones** son patrones DS3 para componentes que no existen en Prisma (ej: EventCard, MetadataRows). El script genera un `// TODO [composición]` con los sub-componentes descritos. El diseñador los arma manualmente en Figma.
+**Composiciones** ahora se crean como sub-frames con Auto Layout que contienen los sub-componentes reales de Prisma. Ya no quedan como simples `// TODO`.
 
 **Brand mode** se aplica automáticamente desde el campo `marca` del JSON, aplicando colores, tipografía y tokens de la marca correcta a todos los frames via Figma Variable Modes.
 
 **Página destino**: el script crea o reutiliza una página con nombre `[proyecto] · [marca]`. Si ya existe, los frames se agregan en esa misma página.
+
+**Spacing tokens aplicados:**
+- `sectionSpacing (24px)`: entre secciones dentro del frame principal
+- `itemSpacing (12px)`: entre componentes dentro de una sección
+- `gridGap (8px)`: entre celdas de un grid 2-col
+- `paddingHorizontal (16px)`: padding lateral de secciones con contenido padded

@@ -1,78 +1,96 @@
-# Prisma Designer Plugin · Cencosud
+# Prisma Designer Plugin v3.0 · Cencosud
 
-Plugin para diseñadores UX del equipo Whitelabel de Cencosud. Convierte el output del Discovery Agéntico (DS3 JSON o prompts) en pantallas listas para Figma usando el sistema de diseño Prisma-Components.
+Plugin para diseñadores UX del equipo Whitelabel de Cencosud. Convierte DS3 JSON en pantallas directamente en Figma, valida calidad de diseño contra las Prisma Design Rules, y ejecuta Quality Gate con scoring de 100 puntos.
 
 ## Skills disponibles
 
 | Skill | Trigger | Qué hace |
 |---|---|---|
-| `/crear-pantallas` | "crear pantallas desde ds3" | Flujo completo: valida → resuelve → entrega JSON para Prisma Builder + prompts para Figma Make |
-| `/sync-prisma` | "sincronizar librería" | Sincroniza el catálogo de componentes desde Figma |
-| `/validar-ds3` | "validar el json" | Valida un DS3 JSON antes de crear pantallas |
+| `/crear-pantallas` | "crear pantallas desde ds3" | Valida diseño + crea pantallas en Figma + reporte Gold Standard |
+| `/validar-ds3` | "validar el json" | Validación en 2 niveles: sintáctica + calidad de diseño |
+| `/quality-gate` | "revisar calidad", "quality score" | Auditoría de diseño: 6 dimensiones, score /100 |
 | `/resolver-componente` | "qué componente uso para..." | Encuentra el componente Prisma correcto en lenguaje natural |
+| `/sync-prisma` | "sincronizar librería" | Sincroniza el catálogo de componentes desde Figma |
 
-## Requisitos
+## Instalación rápida (equipo UX)
 
-### 1. Instalar dependencias del MCP
+### Paso 1 — Instalar el plugin
 
+1. Descarga `prisma-designer-v3.0.0.plugin` desde [Releases](https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest)
+2. En Cowork: **Settings → Plugins → Instalar plugin**
+3. Selecciona el archivo `.plugin` descargado
+
+### Paso 2 — Configurar FIGMA_TOKEN
+
+El plugin necesita un token de Figma para leer Prisma-Components y crear pantallas.
+
+**Obtener el token:**
+1. Figma → clic en tu avatar → **Settings → Security**
+2. En **Personal access tokens** → **Generate new token**
+3. Nombre sugerido: "Prisma MCP Cencosud"
+4. Scope: dar acceso de lectura a los archivos del equipo
+5. Copiar el token (empieza con `figd_`)
+
+**Configurar en tu Mac:**
+
+Opción A — Script automático (recomendado):
 ```bash
-cd "/Users/ebaezaroa/Desktop/Cencosud 2026/Discovery Agentico/Prisma MCP"
-npm install
+cd ruta/al/repo/Plugins-PrismaDesigner
+./setup.sh
 ```
 
-### 2. Configurar FIGMA_TOKEN (obligatorio para /sync-prisma)
-
-El MCP necesita un Personal Access Token de Figma para leer Prisma-Components.
-
-**Paso 1 — Obtener el token:**
-1. Ir a Figma → clic en tu avatar → **Settings**
-2. Ir a la sección **Security**
-3. En **Personal access tokens** → **Generate new token**
-4. Darle un nombre (ej. "Prisma MCP Cencosud") y copiar el token (empieza con `figd_`)
-
-**Paso 2 — Configurar en el sistema:**
-
+Opción B — Manual:
 ```bash
-# Agregar en ~/.zshrc o ~/.bash_profile
-export FIGMA_TOKEN="figd_TU_TOKEN_AQUI"
-
-# Aplicar sin reiniciar terminal
+echo 'export FIGMA_TOKEN="figd_TU_TOKEN"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-> ⚠️ **Importante:** La variable debe estar configurada en el sistema **antes de abrir Cowork**. No se puede configurar desde la UI del plugin — debe estar en las variables de entorno del SO.
+> ⚠️ **Importante:** La variable debe estar configurada **antes de abrir Cowork**. Si Cowork ya estaba abierto, cerrarlo y reabrirlo.
 
-### 3. Archivo Prisma-Components de Cencosud
+### Paso 3 — Instalar dependencias del MCP
 
-URL oficial del archivo:
+```bash
+cd ruta/al/repo/Plugins-PrismaDesigner/prisma-mcp
+npm install
 ```
-https://www.figma.com/design/LnYUTRFuwWpI9phwDCSHOx/Prisma-Components
-```
 
-Correr `/sync-prisma` una vez antes de empezar a usar el plugin para actualizar el catálogo local.
+### Paso 4 — Primera sincronización
+
+En Cowork, ejecutar:
+> /sync-prisma
+
+Esto actualiza el catálogo local de componentes Prisma.
+
+## Design Rules incluidas (v3.0)
+
+El plugin incorpora 6 archivos de reglas de diseño que se aplican automáticamente:
+
+| Rule | Qué define |
+|---|---|
+| UI Rules | Principios, tokens, grid, tipografía, color, composición, Quality Gate |
+| Component Rules | Selección, composición, variants, properties, gap documentation |
+| Screen Playbook | Método paso a paso para construir pantallas (12 pasos) |
+| Accessibility Rules | Contraste, targets, tipografía, estados, iconografía |
+| Motion Rules | Principios de movimiento, candidatos, performance, checklist |
+| Gold Standard Prompt | Prompt maestro de 11 fases para generación de pantallas |
 
 ## Flujo de uso
 
 ```
-1. Ejecutar Discovery Agéntico → DS3 genera packets.ds3
-2. /sync-prisma               → actualizar catálogo (primera vez o tras agregar componentes)
-3. /crear-pantallas           → pegar JSON → entrega enriched_prisma.json
-4. Prisma Builder en Figma    → pegar JSON → Build Screens
-5. Figma Make (opcional)      → prompts para componentes nuevos
+1. Discovery Agéntico → genera DS3 JSON (packets.ds3)
+2. /sync-prisma       → actualizar catálogo (primera vez o tras cambios)
+3. /validar-ds3       → validar sintaxis + calidad de diseño
+4. /crear-pantallas   → crear en Figma + reporte Gold Standard
+5. /quality-gate      → auditoría post-creación (score /100)
 ```
 
-## Componentes nuevos (Playground)
+## Archivo Prisma-Components
 
-Los siguientes componentes fueron creados para WL Groceries Brasil y están en el Playground de Prisma-Components:
-
-| Componente | Uso |
-|---|---|
-| `Social Login > Social_Login · Type=Apple · State=Default` | Auth con Apple ID |
-| `Social Login > Social_Login · Type=Google · State=Default` | Auth con Google |
-| `Inputs > OTP_Input · Digits=6 · State=Default` | Verificación SMS |
-
-Correr `/sync-prisma` para que el catálogo los reconozca.
+URL oficial:
+```
+https://www.figma.com/design/LnYUTRFuwWpI9phwDCSHOx/Prisma-Components
+```
 
 ## Versión
 
-v1.1 · Julio 2026 · Whitelabel UX Team · Cencosud
+v3.0.0 · Agosto 2026 · Whitelabel UX Team · Cencosud

@@ -1,7 +1,7 @@
 {
   "name": "prisma-designer",
-  "version": "3.0.0",
-  "description": "Plugin para diseñadores UX que trabajan con el sistema de diseño Prisma de Cencosud. Convierte DS3 JSON en pantallas directamente en Figma, valida calidad de diseño contra las Prisma Design Rules, ejecuta Quality Gate con scoring de 100 puntos, y resuelve componentes del catálogo. v3.0 incorpora el sistema completo de reglas de diseño: UI Rules, Component Rules, Screen Playbook, Accessibility Rules, Motion Rules y Gold Standard Screen Prompt.",
+  "version": "3.1.0",
+  "description": "Plugin para diseñadores UX que trabajan con el sistema de diseño Prisma de Cencosud. Convierte DS3 JSON en pantallas de alta fidelidad directamente en Figma con secciones, grids 2-col, scroll horizontal, sticky elements y spacing diferenciado. Valida calidad contra las Prisma Design Rules y ejecuta Quality Gate con scoring de 100 puntos.",
   "author": {
     "name": "Whitelabel UX Team · Cencosud"
   },

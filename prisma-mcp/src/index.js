@@ -282,14 +282,29 @@ async function handleSyncLibrary({ file_url }) {
   };
 }
 
-// ── Figma Script Generator ────────────────────────────────────
+// ── Figma Script Generator v3.1 ──────────────────────────────
 // Genera el código JavaScript que Claude ejecuta via use_figma
 // para crear pantallas directamente en Figma.
+//
+// v3.1 — Mejoras de fidelidad:
+//   • Agrupación por secciones con Auto Layout independiente
+//   • Grids 2-col para product cards y contenido en cuadrícula
+//   • sectionSpacing entre secciones, itemSpacing dentro
+//   • Scroll horizontal para chips/filtros/categorías
+//   • Soporte para composiciones (sub-componentes en un frame)
+//   • Sticky/fixed elements (nav bottom, sticky buttons)
+//   • Padding inteligente: full-width vs padded por tipo
+// ──────────────────────────────────────────────────────────────
+
 function generateFigmaScript(ds3Data) {
-  const S = TOKENS.screen;          // paddingHorizontal, paddingBottom, itemSpacing, width, height
-  const FRAME_W = S.width;          // 390
-  const FRAME_H = S.height;         // 844
-  const GAP = 60;                   // espacio entre frames en el canvas
+  const S = TOKENS.screen;
+  const SP = TOKENS.spacing;
+  const FRAME_W = S.width;              // 390
+  const FRAME_H = S.height;             // 844
+  const GAP = 60;                       // espacio entre frames en canvas
+  const SECTION_GAP = S.sectionSpacing; // 24 — entre secciones
+  const ITEM_GAP = S.itemSpacing;       // 12 — dentro de secciones
+  const PAD_H = S.paddingHorizontal;    // 16
 
   const pantallas = ds3Data.pantallas || [];
   const varNames  = pantallas.map((_, i) => `s${String(i + 1).padStart(2, '0')}`);
@@ -299,7 +314,7 @@ function generateFigmaScript(ds3Data) {
   const pageName = `${ds3Data.proyecto || 'DS3'} · ${ds3Data.marca || 'Brand'}`;
 
   L.push(`// ═══════════════════════════════════════════════════════════════`);
-  L.push(`// Auto-generado por Prisma MCP — create_screens_from_ds3`);
+  L.push(`// Auto-generado por Prisma MCP v3.1 — create_screens_from_ds3`);
   L.push(`// Proyecto : ${ds3Data.proyecto || '—'}`);
   L.push(`// Marca    : ${ds3Data.marca    || '—'}`);
   L.push(`// Generado : ${new Date().toISOString().split('T')[0]}`);
@@ -311,7 +326,13 @@ function generateFigmaScript(ds3Data) {
   L.push(`if (!targetPage) { targetPage = figma.createPage(); targetPage.name = PAGE_NAME; }`);
   L.push(`await figma.setCurrentPageAsync(targetPage);`);
   L.push(``);
-  L.push(`const T = { padH: ${S.paddingHorizontal}, gap: ${S.itemSpacing}, padB: ${S.paddingBottom} };`);
+  L.push(`const T = {`);
+  L.push(`  padH: ${PAD_H},`);
+  L.push(`  itemGap: ${ITEM_GAP},`);
+  L.push(`  sectionGap: ${SECTION_GAP},`);
+  L.push(`  padB: ${S.paddingBottom},`);
+  L.push(`  gridGap: ${SP.l || 8}`);
+  L.push(`};`);
   L.push(`const W = ${FRAME_W}, H = ${FRAME_H}, GAP = ${GAP};`);
   L.push(``);
   L.push(`// ── Helpers ──────────────────────────────────────────────────`);
@@ -326,7 +347,7 @@ function generateFigmaScript(ds3Data) {
   L.push(`  f.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];`);
   L.push(`  f.layoutMode = 'VERTICAL';`);
   L.push(`  f.primaryAxisSizingMode = 'FIXED'; f.counterAxisSizingMode = 'FIXED';`);
-  L.push(`  f.itemSpacing = T.gap;`);
+  L.push(`  f.itemSpacing = T.sectionGap;`);
   L.push(`  f.paddingTop = 0; f.paddingBottom = T.padB;`);
   L.push(`  f.paddingLeft = 0; f.paddingRight = 0;`);
   L.push(`  f.clipsContent = true;`);
@@ -334,7 +355,53 @@ function generateFigmaScript(ds3Data) {
   L.push(`  return f;`);
   L.push(`}`);
   L.push(``);
-  L.push(`// Wrapper con padding horizontal para componentes 'padded'`);
+  L.push(`// Crea un frame de sección dentro de la pantalla`);
+  L.push(`function makeSection(parent, name, opts) {`);
+  L.push(`  const s = figma.createFrame();`);
+  L.push(`  s.name = name;`);
+  L.push(`  s.layoutMode = opts.direction || 'VERTICAL';`);
+  L.push(`  s.primaryAxisSizingMode = 'AUTO';`);
+  L.push(`  s.counterAxisSizingMode = 'FIXED';`);
+  L.push(`  s.itemSpacing = opts.gap ?? T.itemGap;`);
+  L.push(`  s.paddingLeft = opts.padH ?? 0; s.paddingRight = opts.padH ?? 0;`);
+  L.push(`  s.paddingTop = opts.padV ?? 0; s.paddingBottom = opts.padV ?? 0;`);
+  L.push(`  s.fills = [];`);
+  L.push(`  parent.appendChild(s);`);
+  L.push(`  s.layoutSizingHorizontal = 'FILL';`);
+  L.push(`  return s;`);
+  L.push(`}`);
+  L.push(``);
+  L.push(`// Crea una fila de grid (2 columnas con gap)`);
+  L.push(`function makeGridRow(parent) {`);
+  L.push(`  const row = figma.createFrame();`);
+  L.push(`  row.name = '_grid_row';`);
+  L.push(`  row.layoutMode = 'HORIZONTAL';`);
+  L.push(`  row.primaryAxisSizingMode = 'FIXED';`);
+  L.push(`  row.counterAxisSizingMode = 'AUTO';`);
+  L.push(`  row.itemSpacing = T.gridGap;`);
+  L.push(`  row.fills = [];`);
+  L.push(`  parent.appendChild(row);`);
+  L.push(`  row.layoutSizingHorizontal = 'FILL';`);
+  L.push(`  return row;`);
+  L.push(`}`);
+  L.push(``);
+  L.push(`// Scroll horizontal container`);
+  L.push(`function makeScrollH(parent, name) {`);
+  L.push(`  const sc = figma.createFrame();`);
+  L.push(`  sc.name = name || '_scroll_h';`);
+  L.push(`  sc.layoutMode = 'HORIZONTAL';`);
+  L.push(`  sc.primaryAxisSizingMode = 'AUTO';`);
+  L.push(`  sc.counterAxisSizingMode = 'AUTO';`);
+  L.push(`  sc.itemSpacing = T.gridGap;`);
+  L.push(`  sc.paddingLeft = T.padH; sc.paddingRight = T.padH;`);
+  L.push(`  sc.fills = [];`);
+  L.push(`  sc.clipsContent = true;`);
+  L.push(`  parent.appendChild(sc);`);
+  L.push(`  sc.layoutSizingHorizontal = 'FILL';`);
+  L.push(`  return sc;`);
+  L.push(`}`);
+  L.push(``);
+  L.push(`// Wrapper con padding horizontal`);
   L.push(`function wrapPad(frame) {`);
   L.push(`  const w = figma.createFrame();`);
   L.push(`  w.layoutMode = 'VERTICAL';`);
@@ -369,7 +436,15 @@ function generateFigmaScript(ds3Data) {
   L.push(`  return inst;`);
   L.push(`}`);
   L.push(``);
-  L.push(`// Aplica contenido de texto a una instancia (Opción B: setProperties o text node)`);
+  L.push(`// Agrega un componente a una celda de grid (fill horizontal)`);
+  L.push(`async function addGridCell(row, key) {`);
+  L.push(`  const inst = await li(key);`);
+  L.push(`  row.appendChild(inst);`);
+  L.push(`  inst.layoutSizingHorizontal = 'FILL';`);
+  L.push(`  return inst;`);
+  L.push(`}`);
+  L.push(``);
+  L.push(`// Aplica contenido de texto a una instancia`);
   L.push(`async function setText(inst, text, cfg) {`);
   L.push(`  if (!text || !cfg) return;`);
   L.push(`  try {`);
@@ -398,42 +473,91 @@ function generateFigmaScript(ds3Data) {
     L.push(`// ── ${screenId} · ${nombre} ${'─'.repeat(Math.max(0, 46 - screenId.length - nombre.length))}`);
     L.push(`const ${varName} = makeFrame('${screenId} · ${nombre}', ${offsetX});`);
 
-    const componentes = screen.componentes || [];
-    for (const comp of componentes) {
-      const rol = comp.nombre_intencional || comp.rol || comp.nombre || '';
+    // ── Determinar secciones ──────────────────────────────────
+    // Si el DS3 tiene secciones explícitas, usarlas.
+    // Si no, agrupar por el campo "seccion" de cada componente.
+    // Si tampoco hay "seccion", auto-detectar por tipo de componente.
+    const secciones = _buildSections(screen);
 
-      // Composiciones manuales → skip con TODO
-      if (comp.tipo === 'composicion') {
-        L.push(`// TODO [composición]: ${rol} — crear manualmente con sub-componentes`);
-        continue;
-      }
+    let sectionIdx = 0;
+    for (const section of secciones) {
+      sectionIdx++;
+      const secVar = `${varName}_sec${sectionIdx}`;
+      const secName = section.nombre || `section_${sectionIdx}`;
+      const layout = section.layout || 'stack';
 
-      const compName = comp.componente;
-      if (!compName) {
-        L.push(`// TODO [sin nombre]: ${JSON.stringify(comp).substring(0, 80)}`);
-        continue;
-      }
+      if (layout === 'grid-2col') {
+        // ── Grid 2 columnas ──────────────────────────────────
+        L.push(``);
+        L.push(`// Section: ${secName} (grid 2-col)`);
+        L.push(`const ${secVar} = makeSection(${varName}, '${secName}', { padH: T.padH, gap: T.gridGap });`);
 
-      const entry = catalog.get(compName);
-      if (!entry || !entry.figmaKey) {
-        missingKeys.push(`${screenId}: "${compName}"`);
-        L.push(`// ⚠️ Sin figmaKey en catálogo: "${compName}" — agregar manualmente`);
-        continue;
-      }
+        const comps = section.componentes || [];
+        for (let c = 0; c < comps.length; c += 2) {
+          const rowVar = `${secVar}_r${Math.floor(c / 2)}`;
+          L.push(`const ${rowVar} = makeGridRow(${secVar});`);
 
-      const contenido = comp.contenido || '';
-      const hasText = contenido && entry.textConfig;
+          // Cell 1
+          _emitComponent(L, comps[c], rowVar, missingKeys, screenId, true);
+          // Cell 2 (if exists)
+          if (c + 1 < comps.length) {
+            _emitComponent(L, comps[c + 1], rowVar, missingKeys, screenId, true);
+          }
+        }
 
-      if (hasText) {
-        L.push(`{ const _i = await addComp(${varName}, '${entry.figmaKey}', '${entry.layoutType}'); await setText(_i, ${JSON.stringify(contenido)}, ${JSON.stringify(entry.textConfig)}); } // ${rol}`);
+      } else if (layout === 'scroll-h') {
+        // ── Scroll horizontal ────────────────────────────────
+        L.push(``);
+        L.push(`// Section: ${secName} (scroll horizontal)`);
+        L.push(`const ${secVar} = makeScrollH(${varName}, '${secName}');`);
+
+        for (const comp of (section.componentes || [])) {
+          _emitComponent(L, comp, secVar, missingKeys, screenId, false);
+        }
+
+      } else if (layout === 'sticky-bottom') {
+        // ── Sticky bottom ────────────────────────────────────
+        // Se agrega al final con spacer para empujar al fondo
+        L.push(``);
+        L.push(`// Section: ${secName} (sticky bottom)`);
+        L.push(`// Spacer para empujar el sticky al fondo`);
+        L.push(`{ const _sp = figma.createFrame(); _sp.name = '_spacer'; _sp.layoutMode = 'VERTICAL';`);
+        L.push(`  _sp.primaryAxisSizingMode = 'FIXED'; _sp.counterAxisSizingMode = 'FIXED';`);
+        L.push(`  _sp.resize(1, 1); _sp.fills = []; ${varName}.appendChild(_sp);`);
+        L.push(`  _sp.layoutSizingHorizontal = 'FILL'; _sp.layoutGrow = 1; }`);
+        L.push(`const ${secVar} = makeSection(${varName}, '${secName}', { gap: ${SP.s || 4} });`);
+
+        for (const comp of (section.componentes || [])) {
+          _emitComponent(L, comp, secVar, missingKeys, screenId, false);
+        }
+
       } else {
-        L.push(`await addComp(${varName}, '${entry.figmaKey}', '${entry.layoutType}'); // ${rol}`);
+        // ── Stack vertical (default) ─────────────────────────
+        // Para secciones con un solo componente full-width (header, nav),
+        // no creamos wrapper extra — va directo al frame.
+        const comps = section.componentes || [];
+        const isSingleFullWidth = comps.length === 1 && !section.padded;
+
+        if (isSingleFullWidth) {
+          L.push(``);
+          L.push(`// Section: ${secName} (single)`);
+          _emitComponent(L, comps[0], varName, missingKeys, screenId, false);
+        } else {
+          const padOpt = section.padded ? 'T.padH' : '0';
+          L.push(``);
+          L.push(`// Section: ${secName}`);
+          L.push(`const ${secVar} = makeSection(${varName}, '${secName}', { padH: ${padOpt}, gap: T.itemGap });`);
+
+          for (const comp of comps) {
+            _emitComponent(L, comp, secVar, missingKeys, screenId, false);
+          }
+        }
       }
     }
   }
 
   // ── Brand mode ────────────────────────────────────────────────
-  const BRAND_MODE_VAR_KEY = '547b5471cbd40f24ea2fc90355ef9e9c7f952645'; // variable de 2-Style Tokens
+  const BRAND_MODE_VAR_KEY = '547b5471cbd40f24ea2fc90355ef9e9c7f952645';
   const marca = ds3Data.marca || '';
   L.push(``);
   L.push(`// ── Brand mode: ${marca} ─────────────────────────────────────`);
@@ -450,6 +574,233 @@ function generateFigmaScript(ds3Data) {
   L.push(`return { created: [${varNames.map(v => `${v}.name`).join(', ')}] };`);
 
   return { script: L.join('\n'), missingKeys };
+}
+
+// ── Helper: emitir componente como línea de script ───────────
+function _emitComponent(L, comp, parentVar, missingKeys, screenId, isGridCell) {
+  const rol = comp.nombre_intencional || comp.rol || comp.nombre || '';
+
+  // Composiciones → crear sub-frame con sus componentes
+  if (comp.tipo === 'composicion') {
+    const subComps = comp.composicion || [];
+    if (subComps.length === 0) {
+      L.push(`// TODO [composición sin sub-componentes]: ${rol}`);
+      return;
+    }
+
+    L.push(`{ // Composición: ${rol}`);
+    L.push(`  const _cf = figma.createFrame();`);
+    L.push(`  _cf.name = ${JSON.stringify(rol || 'Composicion')};`);
+    L.push(`  _cf.layoutMode = 'VERTICAL';`);
+    L.push(`  _cf.primaryAxisSizingMode = 'AUTO'; _cf.counterAxisSizingMode = 'FIXED';`);
+    L.push(`  _cf.itemSpacing = ${TOKENS.spacing.s || 4}; _cf.fills = [];`);
+    L.push(`  ${parentVar}.appendChild(_cf);`);
+    L.push(`  _cf.layoutSizingHorizontal = 'FILL';`);
+
+    for (const sub of subComps) {
+      const subName = sub.componente || sub.component || '';
+      if (!subName) continue;
+      const entry = catalog.get(subName);
+      if (!entry || !entry.figmaKey) {
+        missingKeys.push(`${screenId}: "${subName}" (en composición ${rol})`);
+        L.push(`  // ⚠️ Sin figmaKey: "${subName}"`);
+        continue;
+      }
+      L.push(`  { const _si = await li('${entry.figmaKey}'); _cf.appendChild(_si); _si.layoutSizingHorizontal = 'FILL'; }`);
+    }
+    L.push(`}`);
+    return;
+  }
+
+  const compName = comp.componente;
+  if (!compName) {
+    L.push(`// TODO [sin nombre]: ${JSON.stringify(comp).substring(0, 80)}`);
+    return;
+  }
+
+  const entry = catalog.get(compName);
+  if (!entry || !entry.figmaKey) {
+    missingKeys.push(`${screenId}: "${compName}"`);
+    L.push(`// ⚠️ Sin figmaKey en catálogo: "${compName}" — agregar manualmente`);
+    return;
+  }
+
+  const contenido = comp.contenido || '';
+  const hasText = contenido && entry.textConfig;
+
+  if (isGridCell) {
+    // Grid cell: usar addGridCell
+    if (hasText) {
+      L.push(`{ const _i = await addGridCell(${parentVar}, '${entry.figmaKey}'); await setText(_i, ${JSON.stringify(contenido)}, ${JSON.stringify(entry.textConfig)}); } // ${rol}`);
+    } else {
+      L.push(`await addGridCell(${parentVar}, '${entry.figmaKey}'); // ${rol}`);
+    }
+  } else {
+    // Normal: usar addComp
+    if (hasText) {
+      L.push(`{ const _i = await addComp(${parentVar}, '${entry.figmaKey}', '${entry.layoutType}'); await setText(_i, ${JSON.stringify(contenido)}, ${JSON.stringify(entry.textConfig)}); } // ${rol}`);
+    } else {
+      L.push(`await addComp(${parentVar}, '${entry.figmaKey}', '${entry.layoutType}'); // ${rol}`);
+    }
+  }
+}
+
+// ── Helper: construir secciones desde pantalla ───────────────
+// Soporta 3 modos:
+//   1. pantalla.secciones → array explícito (DS3 v2)
+//   2. componentes con campo "seccion" → agrupar
+//   3. auto-detección por nombre/tipo de componente
+function _buildSections(screen) {
+  // Modo 1: secciones explícitas
+  if (Array.isArray(screen.secciones) && screen.secciones.length > 0) {
+    return screen.secciones;
+  }
+
+  const componentes = screen.componentes || [];
+  if (componentes.length === 0) return [];
+
+  // Modo 2: agrupar por campo "seccion"
+  const hasSeccionField = componentes.some(c => c.seccion);
+  if (hasSeccionField) {
+    const groups = [];
+    let current = null;
+    for (const comp of componentes) {
+      const secId = comp.seccion || '_default';
+      if (!current || current._id !== secId) {
+        current = {
+          _id: secId,
+          nombre: secId,
+          layout: comp.layout_seccion || 'stack',
+          padded: comp.padded_seccion !== false,
+          componentes: []
+        };
+        groups.push(current);
+      }
+      current.componentes.push(comp);
+    }
+    return groups;
+  }
+
+  // Modo 3: auto-detección inteligente
+  return _autoDetectSections(componentes);
+}
+
+// ── Auto-detección de secciones por tipo de componente ───────
+// Heurísticas basadas en nombres comunes de Prisma-Components
+function _autoDetectSections(componentes) {
+  const sections = [];
+  let currentSection = null;
+
+  // Patrones para detectar tipo de sección
+  const HEADER_PATTERNS = /^(TopBar|NavBar|Navigation|StatusBar|Header|SearchBar)/i;
+  const STICKY_PATTERNS = /^(BottomBar|TabBar|StickyButton|BottomSheet|FloatingAction|NavigationBar)/i;
+  const CHIP_PATTERNS   = /^(Chip|Tag|Filter|CategoryPill|SegmentedControl|TabButton)/i;
+  const CARD_PATTERNS   = /^(ProductCard|Card_product|Promo_card|ItemCard|CategoryCard)/i;
+  const TITLE_PATTERNS  = /^(TitleSection|SectionHeader|Title_section|Subtitle)/i;
+
+  function pushSection(nombre, layout, padded, comps) {
+    if (comps.length > 0) {
+      sections.push({ nombre, layout, padded, componentes: [...comps] });
+    }
+  }
+
+  let headerComps = [];
+  let bodyComps = [];
+  let stickyComps = [];
+  let inHeader = true;
+
+  // Primer paso: separar header, body, sticky
+  for (const comp of componentes) {
+    const name = comp.componente || comp.nombre_intencional || '';
+
+    if (STICKY_PATTERNS.test(name)) {
+      stickyComps.push(comp);
+      continue;
+    }
+
+    if (inHeader && HEADER_PATTERNS.test(name)) {
+      headerComps.push(comp);
+      continue;
+    }
+
+    // Al encontrar el primer componente no-header, salimos de header
+    inHeader = false;
+    bodyComps.push(comp);
+  }
+
+  // Emitir header (cada componente como su propia sección full-width)
+  for (const comp of headerComps) {
+    pushSection('header', 'stack', false, [comp]);
+  }
+
+  // Segundo paso: agrupar body en secciones por tipo
+  let cardBuffer = [];
+  let chipBuffer = [];
+
+  function flushCards() {
+    if (cardBuffer.length > 0) {
+      pushSection('product_grid', 'grid-2col', true, cardBuffer);
+      cardBuffer = [];
+    }
+  }
+
+  function flushChips() {
+    if (chipBuffer.length > 0) {
+      pushSection('quick_filters', 'scroll-h', false, chipBuffer);
+      chipBuffer = [];
+    }
+  }
+
+  let generalBuffer = [];
+  function flushGeneral() {
+    if (generalBuffer.length > 0) {
+      pushSection('content', 'stack', true, generalBuffer);
+      generalBuffer = [];
+    }
+  }
+
+  for (const comp of bodyComps) {
+    const name = comp.componente || comp.nombre_intencional || '';
+
+    if (CARD_PATTERNS.test(name)) {
+      flushChips();
+      flushGeneral();
+      cardBuffer.push(comp);
+      continue;
+    }
+
+    if (CHIP_PATTERNS.test(name)) {
+      flushCards();
+      flushGeneral();
+      chipBuffer.push(comp);
+      continue;
+    }
+
+    if (TITLE_PATTERNS.test(name)) {
+      // Titles break card/chip runs but start a new general section
+      flushCards();
+      flushChips();
+      flushGeneral();
+      generalBuffer.push(comp);
+      continue;
+    }
+
+    // Default: general content
+    flushCards();
+    flushChips();
+    generalBuffer.push(comp);
+  }
+
+  flushCards();
+  flushChips();
+  flushGeneral();
+
+  // Emitir sticky bottom
+  if (stickyComps.length > 0) {
+    pushSection('sticky_bottom', 'sticky-bottom', false, stickyComps);
+  }
+
+  return sections;
 }
 
 async function handleCreateScreensFromDS3({ ds3_json, figma_file_url }) {

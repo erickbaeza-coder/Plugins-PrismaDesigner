@@ -54,6 +54,8 @@ El agente analiza el DS3 JSON aplicando las Design Rules. Evalúa cada pantalla 
 - [ ] ¿El orden de componentes sigue la lógica: contexto → contenido principal → acciones → nav persistente?
 - [ ] ¿No hay solapamientos lógicos? (ej: dos navbars, dos sticky buttons)
 - [ ] ¿La cantidad de componentes es proporcional al objetivo?
+- [ ] ¿Usa secciones (`secciones` o campo `seccion`) para agrupar componentes? (v3.1: mejora significativamente la fidelidad del output)
+- [ ] ¿Las product cards usan layout `grid-2col`? ¿Los filtros/chips usan `scroll-h`? ¿Los bottom bars usan `sticky-bottom`?
 
 #### B. Design System (Component Rules + UI Rules)
 

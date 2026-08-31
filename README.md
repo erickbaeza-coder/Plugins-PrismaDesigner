@@ -1,15 +1,16 @@
 # prisma-designer Plugin
 
-Plugin de Claude para diseñadores UX del equipo Whitelabel Cencosud. Convierte DS3 JSON en pantallas directamente en Figma usando el catálogo de **Prisma-Components** — sin plugins intermedios.
+Plugin de Claude para diseñadores UX del equipo Whitelabel Cencosud. Convierte DS3 JSON en pantallas directamente en Figma, valida calidad de diseño contra las **Prisma Design Rules**, y ejecuta **Quality Gate** con scoring de 100 puntos.
 
 ## Skills incluidas
 
 | Skill | Descripción |
 |---|---|
-| `crear-pantallas` | Convierte un DS3 JSON en pantallas reales en Figma vía MCP |
+| `crear-pantallas` | Valida diseño + crea pantallas en Figma vía MCP + reporte Gold Standard |
+| `validar-ds3` | Validación en 2 niveles: sintáctica (catálogo) + calidad de diseño (rules) |
+| `quality-gate` | Auditoría de diseño en 6 dimensiones con score /100 |
 | `resolver-componente` | Encuentra el componente Prisma correcto dado una descripción |
 | `sync-prisma` | Sincroniza el catálogo de componentes desde el archivo de Figma |
-| `validar-ds3` | Valida un DS3 JSON antes de crear las pantallas |
 
 ## Estructura del repo
 
@@ -17,87 +18,96 @@ Plugin de Claude para diseñadores UX del equipo Whitelabel Cencosud. Convierte 
 Plugins-PrismaDesigner/
 ├── .github/
 │   └── workflows/
-│       └── notify-teams.yml    ← Notifica a Teams en cada release
-├── prisma-designer/            ← Fuente del plugin
+│       └── notify-teams.yml         ← Notifica a Teams en cada release
+├── prisma-designer/                 ← Fuente del plugin
 │   ├── .claude-plugin/
-│   │   └── plugin.json         ← Nombre, versión, descripción
-│   ├── .mcp.json               ← Configuración del MCP server
+│   │   └── plugin.json              ← Nombre, versión, descripción
+│   ├── .mcp.json                    ← Configuración del MCP server
+│   ├── references/
+│   │   └── rules/                   ← 6 archivos de Design Rules
+│   │       ├── Prisma_Design_System_UI_Rules.md
+│   │       ├── Prisma_Component_Rules.md
+│   │       ├── Prisma_Screen_Playbook.md
+│   │       ├── Prisma_Accessibility_Rules.md
+│   │       ├── Prisma_Motion_Rules.md
+│   │       └── Prisma_Gold_Standard_Screen_Prompt.md
 │   └── skills/
 │       ├── crear-pantallas/
+│       ├── quality-gate/            ← Nueva en v3.0
 │       ├── resolver-componente/
 │       ├── sync-prisma/
 │       └── validar-ds3/
-├── releases/                   ← Archivos .plugin empaquetados
-├── version.json                ← Versión actual (consultado para chequeo de updates)
-├── build.sh                    ← Script para empaquetar
+├── prisma-mcp/                      ← Servidor MCP integrado
+│   ├── src/
+│   ├── scripts/
+│   ├── package.json
+│   └── package-lock.json
+├── Rules de diseño/                 ← Archivos fuente de las reglas
+├── releases/                        ← Archivos .plugin empaquetados
+├── version.json                     ← Versión actual
+├── build.sh                         ← Script para empaquetar
+├── setup.sh                         ← Script de setup para el equipo
 └── .gitignore
 ```
+
+## Instalación para el equipo
+
+### Opción rápida — Script de setup
+
+```bash
+git clone https://github.com/erickbaeza-coder/Plugins-PrismaDesigner.git
+cd Plugins-PrismaDesigner
+./setup.sh
+```
+
+El script:
+1. Pide tu Figma token
+2. Lo configura en `~/.zshrc`
+3. Instala dependencias del MCP (`npm install`)
+4. Verifica que todo funcione
+5. Te indica cómo instalar el `.plugin` en Cowork
+
+### Opción manual
+
+1. Descarga el `.plugin` desde [Releases](https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest)
+2. En Cowork: **Settings → Plugins → Instalar plugin**
+3. Configura `FIGMA_TOKEN`:
+   ```bash
+   echo 'export FIGMA_TOKEN="figd_TU_TOKEN"' >> ~/.zshrc
+   source ~/.zshrc
+   ```
+4. Cierra y reabre Cowork
+5. Ejecuta `/sync-prisma` en tu primera conversación
 
 ## Publicar una nueva versión
 
 ```bash
 # 1. Edita los skills en prisma-designer/skills/
 # 2. Empaqueta:
-./build.sh 2.1.0
+./build.sh 3.1.0
 
 # 3. Commitea y tagea:
 git add -A
-git commit -m "release: v2.1.0"
-git tag v2.1.0
+git commit -m "release: v3.1.0"
+git tag v3.1.0
 git push && git push --tags
 
-# 4. En GitHub: crea un Release desde el tag v2.1.0
-#    - Adjunta releases/prisma-designer-v2.1.0.plugin
-#    - Escribe el changelog en la descripción del release
-#    - Publica → GitHub Actions enviará la notificación a Teams ✅
+# 4. En GitHub: crea un Release desde el tag
+#    - Adjunta releases/prisma-designer-v3.1.0.plugin
+#    - GitHub Actions notificará a Teams automáticamente
 ```
 
 ## Configurar Teams (primera vez)
 
-1. En Microsoft Teams, ve al canal donde quieres recibir notificaciones.
-2. `···` → Flujos → Busca **"Incoming Webhook"** → Configurar.
-3. Copia la URL del webhook.
-4. En GitHub → repo → **Settings → Secrets and variables → Actions → New repository secret**:
+1. En Microsoft Teams, ve al canal de notificaciones
+2. `···` → Flujos → **"Incoming Webhook"** → Configurar
+3. Copia la URL del webhook
+4. En GitHub → repo → **Settings → Secrets → Actions → New repository secret**:
    - Nombre: `TEAMS_WEBHOOK_URL`
-   - Valor: la URL copiada del paso 3.
+   - Valor: la URL del webhook
 
-## Configurar el MCP server (prisma-mcp)
-
-El plugin requiere el servidor MCP local de Prisma. El `.mcp.json` dentro del plugin apunta a:
-
-```
-/Users/ebaezaroa/Desktop/Cencosud 2026/Discovery Agentico/Prisma MCP/src/index.js
-```
-
-Si el MCP está en otra ruta en tu máquina, actualiza `.mcp.json` antes de empaquetar:
-
-```json
-{
-  "mcpServers": {
-    "prisma-mcp": {
-      "command": "node",
-      "args": ["/TU_RUTA/Prisma MCP/src/index.js"],
-      "env": {
-        "FIGMA_TOKEN": "${FIGMA_TOKEN}"
-      }
-    }
-  }
-}
-```
-
-## Instalar el plugin en Claude
-
-1. Descarga el `.plugin` desde la sección **Releases** de este repo.
-2. En Claude Desktop: **Configuración → Plugins → Instalar plugin**.
-3. Selecciona el archivo `.plugin` descargado.
-4. Configura la variable `FIGMA_TOKEN` con tu token de Figma.
-
-## Chequeo automático de versión
-
-Para que el plugin notifique al equipo cuando hay una versión más reciente, agrega en la skill correspondiente una llamada a:
+## Chequeo de versión
 
 ```
 https://raw.githubusercontent.com/erickbaeza-coder/Plugins-PrismaDesigner/main/version.json
 ```
-
-(Reemplaza `erickbaeza-coder/Plugins-PrismaDesigner` con el nombre real del repo.)
