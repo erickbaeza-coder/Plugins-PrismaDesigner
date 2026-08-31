@@ -1,7 +1,7 @@
 {
-  "version": "2.0.0",
-  "release_date": "2026-07-23",
-  "changelog": "v2.0 — Primera versión del plugin Prisma Designer. Skills: crear-pantallas, resolver-componente, sync-prisma, validar-ds3. Integración directa con Figma vía MCP.",
-  "download_url": "https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest/download/prisma-designer-v2.0.0.plugin",
+  "version": "3.0.0",
+  "release_date": "2026-08-31",
+  "changelog": "v3.0 — Incorpora Prisma Design Rules al plugin completo. Nueva skill quality-gate con scoring de 100 puntos en 6 dimensiones. crear-pantallas ahora valida diseño (no solo sintaxis) y entrega reporte Gold Standard. validar-ds3 amplía a validación de diseño en 2 niveles (sintáctica + calidad). resolver-componente aplica Component Rules. 6 archivos de reglas de diseño incluidos como references: UI Rules, Component Rules, Screen Playbook, Accessibility Rules, Motion Rules, Gold Standard Screen Prompt.",
+  "download_url": "https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest/download/prisma-designer-v3.0.0.plugin",
   "min_claude_version": "claude-sonnet-4-6"
 }

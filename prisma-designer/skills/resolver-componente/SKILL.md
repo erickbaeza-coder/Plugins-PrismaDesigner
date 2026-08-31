@@ -14,6 +14,15 @@ Recibe una descripción en lenguaje natural y devuelve el nombre exacto del
 componente Prisma que mejor coincide, con su sintaxis correcta lista para
 usar en un DS3 JSON.
 
+### Rules que aplica
+
+Antes de ejecutar, el agente **DEBE leer**:
+
+1. `references/rules/Prisma_Component_Rules.md` — Orden de decisión, properties, variants, gap documentation
+
+El agente debe seguir el orden de decisión de Component Rules:
+componente existente → variante → property → slot → composición → nuevo componente (solo si hay gap real).
+
 ## Flujo de ejecución
 
 ### Paso 1 — Recibir la descripción
