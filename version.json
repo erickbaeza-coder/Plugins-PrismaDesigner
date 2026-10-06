@@ -1,7 +1,7 @@
 {
-  "version": "3.1.0",
-  "release_date": "2026-08-31",
-  "changelog": "v3.1 — Mejora significativa en la fidelidad de pantallas generadas. generateFigmaScript reescrito con: agrupación por secciones (Auto Layout independiente por sección), grids 2 columnas para product cards, scroll horizontal para chips/filtros, sticky bottom para nav bars y CTAs, sectionSpacing (24px) entre secciones vs itemSpacing (12px) dentro, composiciones ahora generan sub-frames reales (no TODO). DS3 JSON schema v2: soporte para campo secciones con layouts (stack, grid-2col, scroll-h, sticky-bottom), campo seccion por componente, auto-detección inteligente por nombre de componente cuando no hay secciones explícitas.",
+  "version": "3.2.0",
+  "release_date": "2026-10-06",
+  "changelog": "v3.2 \u2014 Fix MCP connection (ruta .mcp.json), sync con contexto de component set, error frames visibles, lookup figmaSetName.",
   "download_url": "https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest/download/prisma-designer-v3.1.0.plugin",
   "min_claude_version": "claude-sonnet-4-6"
 }

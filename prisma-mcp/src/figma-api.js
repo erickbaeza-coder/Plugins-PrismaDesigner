@@ -38,7 +38,7 @@ export class FigmaAPI {
     };
   }
 
-  /** Todos los componentes publicados de un archivo */
+  /** Todos los componentes publicados de un archivo (variants individuales) */
   async getFileComponents(fileKey) {
     const data = await this.get(`/files/${fileKey}/components`);
     const meta = data.meta || {};
@@ -52,6 +52,41 @@ export class FigmaAPI {
       containingFrame: c.containing_frame?.name || '',
       componentSetId: c.component_set_id || null
     }));
+  }
+
+  /**
+   * Retorna un mapa de component sets con sus variantes.
+   * Estructura: { "wlproductcard": { displayName, variants: { "type=plp, state=default": "key" }, _default: "key" } }
+   * Esta estructura permite lookup por nombre de set + propiedades del variant.
+   */
+  async getComponentSetsWithVariants(fileKey) {
+    const components = await this.getFileComponents(fileKey);
+    const sets = {};
+
+    for (const comp of components) {
+      const rawSetName = comp.containingFrame || comp.name;
+      const normSetName = normalizeSetName(rawSetName);
+
+      if (!sets[normSetName]) {
+        sets[normSetName] = {
+          displayName: rawSetName,
+          variants: {}
+        };
+      }
+
+      // Normaliza las propiedades del variant: "Type=PLP, State=Default" → "type=plp, state=default"
+      const normProps = normalizeVariantProps(comp.name);
+
+      // Guarda la key del variant
+      sets[normSetName].variants[normProps] = comp.key;
+
+      // Guarda el primer variant como _default
+      if (!sets[normSetName]._default) {
+        sets[normSetName]._default = comp.key;
+      }
+    }
+
+    return sets;
   }
 
   /** Componente específico por key */
@@ -73,7 +108,30 @@ export class FigmaAPI {
 /** Extrae el grupo (primer nivel de la jerarquía de frames) */
 function extractGroup(frameName) {
   if (!frameName) return 'Other';
-  // Nombres de frame suelen ser "Grupo / Componente" o "Grupo"
   const parts = frameName.split(/[/\\]/);
   return parts[0].trim();
+}
+
+/**
+ * Normaliza el nombre de un component set para lookup.
+ * "WlProductCard" → "wlproductcard"
+ * "Product Card" → "productcard"
+ */
+export function normalizeSetName(name) {
+  return (name || '').toLowerCase().replace(/[\s_\-]/g, '');
+}
+
+/**
+ * Normaliza las propiedades de un variant para lookup.
+ * "Type=PLP, State=Default" → "type=plp, state=default"
+ * Ordena las propiedades para que el orden no importe.
+ */
+export function normalizeVariantProps(propsStr) {
+  if (!propsStr) return '';
+  return propsStr
+    .toLowerCase()
+    .split(',')
+    .map(p => p.trim())
+    .sort()
+    .join(', ');
 }

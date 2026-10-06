@@ -36,6 +36,7 @@ const BASE_CATALOG = [
   {
     group: 'Nav Bar',
     name: 'Nav Bar > NavBar · Color=Color · Type=Home · State=Default',
+    figmaSetName: 'WlNavBar',
     figmaKey: 'de67123ed529eb944b0f0f4668d1658456a59181',
     layoutType: 'full-bleed',
     tags: ['navbar', 'bottom', 'navigation', 'tabs', 'footer', 'nav inferior']
@@ -95,6 +96,7 @@ const BASE_CATALOG = [
   {
     group: 'Product Card',
     name: 'Product Card > Product_card · Size=Md · State=Default',
+    figmaSetName: 'WlProductCard',
     figmaKey: 'e2ea416889ee6c4d2f5f890dfb99faadc7045e74', // WlProductCard · Type=PLP · State=Default
     layoutType: 'padded',
     tags: ['product', 'card', 'tarjeta', 'producto', 'grid', 'vertical']
@@ -102,6 +104,7 @@ const BASE_CATALOG = [
   {
     group: 'Product Card',
     name: 'Product Card > Product card_list · State=Default',
+    figmaSetName: 'WlProductCardList',
     figmaKey: '82b060a722e9df4cd1e1ee2b3715efe18bce3aef', // WlProductCardList · State=Default · Type=Lista
     layoutType: 'padded',
     tags: ['product', 'card', 'tarjeta', 'producto', 'list', 'horizontal', 'lista']
@@ -483,20 +486,44 @@ export class PrismaCatalog {
     // Cargar keys actualizados por el auto-sync (prisma-keys.json)
     try {
       const keysPath = join(__dirname, 'prisma-keys.json');
-      const overrides = JSON.parse(readFileSync(keysPath, 'utf8'));
-      // Merge: los keys del sync sobreescriben el catálogo base
-      Object.assign(this._keyMap, overrides);
-      // También actualizar el array _catalog con los keys frescos
-      for (const comp of this._catalog) {
-        const fresh = overrides[normStr(comp.name)];
-        if (fresh) comp.figmaKey = fresh;
+      const stored = JSON.parse(readFileSync(keysPath, 'utf8'));
+
+      // v3.2: detectar si es el nuevo formato { setName: { displayName, variants, _default } }
+      // vs el viejo formato plano { "variantprops": "key" }
+      const isNewFormat = stored && typeof stored === 'object' &&
+        Object.values(stored).some(v => v && typeof v === 'object' && v.variants);
+
+      if (isNewFormat) {
+        // Nuevo formato: intentar resolver cada entrada del catálogo por figmaSetName + props
+        for (const entry of this._catalog) {
+          const key = _resolveKeyFromSets(entry, stored);
+          if (key) {
+            entry.figmaKey = key;
+            this._keyMap[normStr(entry.name)] = key;
+          }
+        }
+        // También poblar _keyMap con todas las keys del sync por si acaso
+        for (const [setKey, setData] of Object.entries(stored)) {
+          if (setData.variants) {
+            for (const [props, varKey] of Object.entries(setData.variants)) {
+              this._keyMap[`${setKey}::${props}`] = varKey;
+            }
+          }
+        }
+      } else {
+        // Formato viejo (retrocompatibilidad): merge plano
+        Object.assign(this._keyMap, stored);
+        for (const comp of this._catalog) {
+          const fresh = stored[normStr(comp.name)];
+          if (fresh && typeof fresh === 'string') comp.figmaKey = fresh;
+        }
       }
     } catch {
       // prisma-keys.json aún no existe — usar catálogo base
     }
   }
 
-  /** Enriquecer catálogo con keys reales de Figma (desde sync_prisma_library) */
+  /** Enriquecer catálogo con keys reales de Figma (desde sync_prisma_library) — formato viejo */
   updateFromFigma(components) {
     let newCount = 0;
     for (const comp of components) {
@@ -517,6 +544,58 @@ export class PrismaCatalog {
       if (comp.key) this._keyMap[normStr(comp.name)] = comp.key;
     }
     return newCount;
+  }
+
+  /**
+   * v3.2: Enriquecer catálogo usando la estructura nueva de setsWithVariants.
+   * setsWithVariants: { "wlproductcard": { displayName, variants: { "type=plp, state=default": "key" }, _default } }
+   */
+  updateFromFigmaV2(setsWithVariants) {
+    let updated = 0;
+    let added = 0;
+
+    // Actualizar _keyMap con todas las keys del sync
+    for (const [setKey, setData] of Object.entries(setsWithVariants)) {
+      if (setData.variants) {
+        for (const [props, varKey] of Object.entries(setData.variants)) {
+          this._keyMap[`${setKey}::${props}`] = varKey;
+        }
+      }
+    }
+
+    // Para cada entrada del catálogo, intentar resolver la key
+    for (const entry of this._catalog) {
+      const key = _resolveKeyFromSets(entry, setsWithVariants);
+      if (key && key !== entry.figmaKey) {
+        entry.figmaKey = key;
+        this._keyMap[normStr(entry.name)] = key;
+        updated++;
+      }
+    }
+
+    // Agregar nuevos sets del sync que no están en el catálogo
+    for (const [setKey, setData] of Object.entries(setsWithVariants)) {
+      const defaultKey = setData._default;
+      if (!defaultKey) continue;
+      const displayName = setData.displayName || setKey;
+      const alreadyExists = this._catalog.some(c =>
+        normStr(c.name).includes(setKey) || (c.figmaSetName && normStr(c.figmaSetName) === setKey)
+      );
+      if (!alreadyExists) {
+        this._catalog.push({
+          group: displayName,
+          name: displayName,
+          figmaSetName: displayName,
+          figmaKey: defaultKey,
+          layoutType: 'padded',
+          tags: [displayName.toLowerCase(), setKey]
+        });
+        this._keyMap[normStr(displayName)] = defaultKey;
+        added++;
+      }
+    }
+
+    return { updated, added };
   }
 
   /** Buscar key de Figma para un nombre de componente */
@@ -602,4 +681,74 @@ function normStr(str) {
     .replace(/\(.*?\)/g, '')
     .replace(/[_\-\s·>]/g, '')
     .replace(/[^a-z0-9=]/g, '');
+}
+
+/**
+ * v3.2: Resuelve la figmaKey para una entrada del catálogo usando setsWithVariants.
+ * Estrategia:
+ * 1. Si la entrada tiene figmaSetName, buscar directamente en ese set
+ * 2. Si no, extraer el nombre base del componente y hacer fuzzy match con los set names
+ * 3. Para la variante, extraer las props del nombre de la entrada y buscar el match más cercano
+ * 4. Fallback: _default del set
+ */
+function _resolveKeyFromSets(entry, setsWithVariants) {
+  const entryName = entry.name || '';
+  
+  // Paso 1: determinar qué set buscar
+  let targetSetKey = null;
+  
+  if (entry.figmaSetName) {
+    // Tiene figmaSetName explícito → buscar directamente
+    targetSetKey = entry.figmaSetName.toLowerCase().replace(/[\s_\-]/g, '');
+  } else {
+    // Extraer el nombre base: "Product Card > Product_card · Size=Md · State=Default"
+    // → extraer "Product_card" (después del >) y normalizar
+    const gtParts = entryName.split('>');
+    const rawBase = gtParts.length > 1 ? gtParts[1].split('·')[0].trim() : gtParts[0].split('·')[0].trim();
+    const normBase = rawBase.toLowerCase().replace(/[\s_\-]/g, '');
+    
+    // Buscar en los sets: primero exact, luego contains
+    if (setsWithVariants[normBase]) {
+      targetSetKey = normBase;
+    } else {
+      // Fuzzy: buscar set cuyo key contiene normBase o viceversa
+      for (const setKey of Object.keys(setsWithVariants)) {
+        if (setKey.includes(normBase) || normBase.includes(setKey)) {
+          targetSetKey = setKey;
+          break;
+        }
+      }
+    }
+  }
+  
+  if (!targetSetKey || !setsWithVariants[targetSetKey]) return null;
+  
+  const setData = setsWithVariants[targetSetKey];
+  
+  // Paso 2: extraer las props del nombre de la entrada para buscar el variant
+  // "Product Card > Product_card · Size=Md · State=Default" → "size=md, state=default"
+  const dotParts = entryName.split('·');
+  if (dotParts.length > 1) {
+    const rawProps = dotParts.slice(1).map(p => p.trim()).join(', ').toLowerCase();
+    // Normalizar las props (ordenar) para que el orden no importe
+    const normProps = rawProps.split(',').map(p => p.trim()).sort().join(', ');
+    
+    // Buscar en los variants del set
+    if (setData.variants[normProps]) {
+      return setData.variants[normProps];
+    }
+    
+    // Fuzzy: buscar variant cuyos props contienen todos los props del entry o viceversa
+    for (const [varProps, varKey] of Object.entries(setData.variants)) {
+      const normVar = varProps.split(',').map(p => p.trim()).sort().join(', ');
+      if (normVar === normProps) return varKey;
+      // Partial: si todos los props del entry están en el variant
+      const entryPropList = normProps.split(',').map(p => p.trim());
+      const varPropList = normVar.split(',').map(p => p.trim());
+      if (entryPropList.every(p => varPropList.includes(p))) return varKey;
+    }
+  }
+  
+  // Fallback: retornar el _default del set
+  return setData._default || null;
 }

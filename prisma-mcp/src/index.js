@@ -14,9 +14,10 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { homedir } from 'os';
 import { FigmaAPI } from './figma-api.js';
 import { PrismaCatalog } from './prisma-catalog.js';
 import { ComponentResolver } from './component-resolver.js';
@@ -26,9 +27,25 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const TOKENS = JSON.parse(readFileSync(join(__dirname, 'prisma-tokens.json'), 'utf8'));
 
 // ── Init ──────────────────────────────────────────────────────
-const figmaToken = process.env.FIGMA_TOKEN;
-if (!figmaToken) {
-  process.stderr.write('⚠️  FIGMA_TOKEN no configurado. Las herramientas de Figma no funcionarán.\n');
+// Leer token: env var → archivo de config como fallback
+let figmaToken = process.env.FIGMA_TOKEN;
+
+// Si el env var no fue sustituido (llega como literal "${FIGMA_TOKEN}") o está vacío,
+// intentar leer desde ~/.prisma-mcp-token
+if (!figmaToken || figmaToken === '${FIGMA_TOKEN}') {
+  try {
+    const tokenFile = join(homedir(), '.prisma-mcp-token');
+    figmaToken = readFileSync(tokenFile, 'utf8').trim();
+    if (figmaToken) {
+      process.stderr.write('✅ FIGMA_TOKEN cargado desde ~/.prisma-mcp-token\n');
+    }
+  } catch {
+    // archivo no existe — continuar sin token
+  }
+}
+
+if (!figmaToken || figmaToken === '${FIGMA_TOKEN}') {
+  process.stderr.write('⚠️  FIGMA_TOKEN no configurado. Creá ~/.prisma-mcp-token con tu token de Figma.\n');
 }
 
 const figmaApi  = new FigmaAPI(figmaToken);
@@ -260,22 +277,34 @@ async function handleSyncLibrary({ file_url }) {
   const fileKey = extractFileKey(file_url);
   if (!fileKey) throw new Error('URL de Figma inválida. Formato esperado: https://www.figma.com/file/XXXX/...');
 
-  const components = await figmaApi.getFileComponents(fileKey);
-  const count = catalog.updateFromFigma(components);
+  // v3.2: usar getComponentSetsWithVariants para capturar contexto de set por variant
+  const setsWithVariants = await figmaApi.getComponentSetsWithVariants(fileKey);
+
+  // Persistir en prisma-keys.json con estructura { setName: { variantProps: key } }
+  const keysPath = join(__dirname, 'prisma-keys.json');
+  writeFileSync(keysPath, JSON.stringify(setsWithVariants, null, 2));
+
+  // Actualizar el catálogo con los nuevos datos
+  const { updated, added } = catalog.updateFromFigmaV2(setsWithVariants);
 
   const groups = catalog.getGroups();
+  const cov = catalog.coverage();
+  const setCount = Object.keys(setsWithVariants).length;
+  const variantCount = Object.values(setsWithVariants).reduce((acc, s) => acc + Object.keys(s.variants).length, 0);
 
   return {
     content: [{
       type: 'text',
       text: [
-        `✅ Sync completado`,
+        `✅ Sync completado (v3.2 — con contexto de component set)`,
         ``,
-        `• Componentes encontrados en Figma: ${components.length}`,
-        `• Nuevos componentes en catálogo: ${count}`,
+        `• Component sets encontrados en Figma: ${setCount}`,
+        `• Variantes totales indexadas: ${variantCount}`,
+        `• Catálogo actualizado: ${updated} entradas actualizadas, ${added} nuevas`,
+        `• Cobertura del catálogo: ${cov.withKey}/${cov.total} componentes con key (${cov.pct}%)`,
         `• Grupos disponibles: ${groups.join(', ')}`,
         ``,
-        `El catálogo ahora tiene datos reales de component keys de Figma.`,
+        `prisma-keys.json guardado con estructura set→variantes para lookups precisos.`,
         `Podés usar create_screens_from_ds3 o create_screens_from_prompts.`
       ].join('\n')
     }]
@@ -337,8 +366,22 @@ function generateFigmaScript(ds3Data) {
   L.push(``);
   L.push(`// ── Helpers ──────────────────────────────────────────────────`);
   L.push(`async function li(key) {`);
-  L.push(`  const c = await figma.importComponentByKeyAsync(key);`);
-  L.push(`  return c.createInstance();`);
+  L.push(`  try {`);
+  L.push(`    const c = await figma.importComponentByKeyAsync(key);`);
+  L.push(`    return c.createInstance();`);
+  L.push(`  } catch (e) {`);
+  L.push(`    // Crea un placeholder rojo si el key es inválido o el componente no está en la librería`);
+  L.push(`    const _err = figma.createFrame();`);
+  L.push(`    _err.name = "❌ KEY_ERROR: " + key.substring(0, 12) + "...";`);
+  L.push(`    _err.resize(300, 48);`);
+  L.push(`    _err.fills = [{ type: "SOLID", color: { r: 1, g: 0, b: 0 }, opacity: 0.2 }];`);
+  L.push(`    await figma.loadFontAsync({ family: "Inter", style: "Regular" });`);
+  L.push(`    const _t = figma.createText();`);
+  L.push(`    _t.characters = "❌ KEY: " + key.substring(0, 24) + " — run /sync-prisma";`);
+  L.push(`    _t.fontSize = 10;`);
+  L.push(`    _err.appendChild(_t);`);
+  L.push(`    return _err;`);
+  L.push(`  }`);
   L.push(`}`);
   L.push(``);
   L.push(`function makeFrame(name, x) {`);
@@ -621,7 +664,20 @@ function _emitComponent(L, comp, parentVar, missingKeys, screenId, isGridCell) {
   const entry = catalog.get(compName);
   if (!entry || !entry.figmaKey) {
     missingKeys.push(`${screenId}: "${compName}"`);
-    L.push(`// ⚠️ Sin figmaKey en catálogo: "${compName}" — agregar manualmente`);
+    // v3.2: placeholder frame rojo visible en lugar de comentario silencioso
+    L.push(`{ // ❌ MISSING KEY: ${JSON.stringify(compName)}`);
+    L.push(`  const _mp = figma.createFrame();`);
+    L.push(`  _mp.name = "⚠️ MISSING: " + ${JSON.stringify(compName)};`);
+    L.push(`  _mp.resize(300, 48);`);
+    L.push(`  _mp.fills = [{ type: "SOLID", color: { r: 1, g: 0.2, b: 0.2 }, opacity: 0.15 }];`);
+    L.push(`  const _mt = figma.createText();`);
+    L.push(`  await figma.loadFontAsync({ family: "Inter", style: "Regular" });`);
+    L.push(`  _mt.characters = "⚠️ " + ${JSON.stringify(compName)} + " — run /sync-prisma";`);
+    L.push(`  _mt.fontSize = 11;`);
+    L.push(`  _mp.appendChild(_mt);`);
+    L.push(`  ${parentVar}.appendChild(_mp);`);
+    L.push(`  _mp.layoutSizingHorizontal = "FILL";`);
+    L.push(`}`);
     return;
   }
 
