@@ -1,4 +1,4 @@
-# Prisma Designer Plugin v3.0 · Cencosud
+# Prisma Designer Plugin v3.2 · Cencosud
 
 Plugin para diseñadores UX del equipo Whitelabel de Cencosud. Convierte DS3 JSON en pantallas directamente en Figma, valida calidad de diseño contra las Prisma Design Rules, y ejecuta Quality Gate con scoring de 100 puntos.
 
@@ -12,54 +12,51 @@ Plugin para diseñadores UX del equipo Whitelabel de Cencosud. Convierte DS3 JSO
 | `/resolver-componente` | "qué componente uso para..." | Encuentra el componente Prisma correcto en lenguaje natural |
 | `/sync-prisma` | "sincronizar librería" | Sincroniza el catálogo de componentes desde Figma |
 
-## Instalación rápida (equipo UX)
+## Instalación paso a paso (equipo UX)
 
-### Paso 1 — Instalar el plugin
+El plugin trae el MCP incluido. Solo necesitas **Node.js** y, si vas a sincronizar el catálogo, un **token de Figma**.
 
-1. Descarga `prisma-designer-v3.0.0.plugin` desde [Releases](https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest)
-2. En Cowork: **Settings → Plugins → Instalar plugin**
-3. Selecciona el archivo `.plugin` descargado
+### Paso 1 — Instalar Node.js (una sola vez)
 
-### Paso 2 — Configurar FIGMA_TOKEN
+1. Abre Terminal y ejecuta `node -v`.
+2. Si muestra `v18` o superior, ve al Paso 2.
+3. Si dice `command not found` o una versión menor, descarga la versión **LTS** desde https://nodejs.org, instálala y vuelve a ejecutar `node -v` para confirmar.
 
-El plugin necesita un token de Figma para leer Prisma-Components y crear pantallas.
+### Paso 2 — Instalar el plugin
 
-**Obtener el token:**
-1. Figma → clic en tu avatar → **Settings → Security**
-2. En **Personal access tokens** → **Generate new token**
-3. Nombre sugerido: "Prisma MCP Cencosud"
-4. Scope: dar acceso de lectura a los archivos del equipo
-5. Copiar el token (empieza con `figd_`)
+1. Descarga `prisma-designer.plugin` desde el Hub UX (catálogo → Prisma Designer → Instalar plugin) o desde [Releases](https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest).
+2. En Cowork: **Settings → Plugins → Instalar plugin** y selecciona el archivo `.plugin`.
+3. Reinicia Cowork.
 
-**Configurar en tu Mac:**
+### Paso 3 — Conectar el MCP de Figma
 
-Opción A — Script automático (recomendado):
-```bash
-cd ruta/al/repo/Plugins-PrismaDesigner
-./setup.sh
-```
+Verifica que el conector oficial de Figma esté activo en Cowork (Settings → Connectors). Es el que dibuja las pantallas en tu archivo de Figma.
 
-Opción B — Manual:
-```bash
-echo 'export FIGMA_TOKEN="figd_TU_TOKEN"' >> ~/.zshrc
-source ~/.zshrc
-```
+### Paso 4 — Token de Figma (solo si vas a usar `/sync-prisma`)
 
-> ⚠️ **Importante:** La variable debe estar configurada **antes de abrir Cowork**. Si Cowork ya estaba abierto, cerrarlo y reabrirlo.
+Si solo creas pantallas, validas y revisas calidad, **sáltate este paso**. Lo necesita quien mantiene el catálogo de componentes.
 
-### Paso 3 — Instalar dependencias del MCP
+1. En Figma: avatar → **Settings → Security → Personal access tokens → Generate new token**.
+2. Nombre sugerido: `Prisma MCP Cencosud`. Permiso de solo lectura de archivos.
+3. Copia el token (empieza con `figd_`). Se muestra una sola vez.
+4. En Terminal ejecuta, reemplazando por tu token:
 
 ```bash
-cd ruta/al/repo/Plugins-PrismaDesigner/prisma-mcp
-npm install
+echo "figd_TU_TOKEN" > ~/.prisma-mcp-token
+chmod 600 ~/.prisma-mcp-token
 ```
 
-### Paso 4 — Primera sincronización
+5. Reinicia Cowork. No lo compartas ni lo subas a ningún repo.
 
-En Cowork, ejecutar:
-> /sync-prisma
+### Paso 5 — Probar que funciona
 
-Esto actualiza el catálogo local de componentes Prisma.
+En Cowork escribe: `¿qué componente uso para un botón principal?` (`/resolver-componente`). Si responde con un componente Prisma, el MCP está conectado.
+
+Si falla: confirma `node -v` (Paso 1), reinicia Cowork y revisa que el plugin aparezca como instalado.
+
+### Paso 6 — Sincronizar catálogo (opcional, solo mantenedores)
+
+Ejecuta `/sync-prisma`. Refresca el catálogo desde Prisma-Components en Figma. Tras sincronizar, hay que publicar una nueva versión del plugin para que el resto del equipo reciba el catálogo actualizado.
 
 ## Design Rules incluidas (v3.0)
 
@@ -93,4 +90,4 @@ https://www.figma.com/design/LnYUTRFuwWpI9phwDCSHOx/Prisma-Components
 
 ## Versión
 
-v3.0.0 · Agosto 2026 · Whitelabel UX Team · Cencosud
+v3.2.1 · Octubre 2026 · Whitelabel UX Team · Cencosud

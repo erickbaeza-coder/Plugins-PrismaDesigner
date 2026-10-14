@@ -1,7 +1,7 @@
 {
-  "version": "3.2.0",
-  "release_date": "2026-10-06",
-  "changelog": "v3.2 \u2014 Fix MCP connection (ruta .mcp.json), sync con contexto de component set, error frames visibles, lookup figmaSetName.",
-  "download_url": "https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest/download/prisma-designer-v3.1.0.plugin",
+  "version": "3.2.1",
+  "release_date": "2026-10-14",
+  "changelog": "v3.2.1 — MCP incluido dentro del plugin (ruta portable con ${CLAUDE_PLUGIN_ROOT}); catálogo Prisma actualizado a 110 componentes.",
+  "download_url": "https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest/download/prisma-designer-v3.2.1.plugin",
   "min_claude_version": "claude-sonnet-4-6"
 }

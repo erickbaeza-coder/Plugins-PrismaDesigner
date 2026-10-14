@@ -37,10 +37,19 @@ print('✅ plugin.json actualizado a v${VERSION}')
 mkdir -p "$OUTPUT_DIR"
 
 # Empaquetar como .plugin (zip con nombre de carpeta)
-zip -r "${OUTPUT_FILE}" "${PLUGIN_NAME}/" \
+# Bundle del MCP dentro del plugin (portable: usa ${CLAUDE_PLUGIN_ROOT})
+STAGE=$(mktemp -d)
+cp -r "${PLUGIN_NAME}" "${STAGE}/"
+mkdir -p "${STAGE}/${PLUGIN_NAME}/prisma-mcp"
+cp -r prisma-mcp/src prisma-mcp/package.json prisma-mcp/package-lock.json "${STAGE}/${PLUGIN_NAME}/prisma-mcp/"
+(cd "${STAGE}/${PLUGIN_NAME}/prisma-mcp" && npm ci --omit=dev --silent)
+OUTPUT_ABS="${STAGE}/out.plugin"
+(cd "${STAGE}" && zip -qr "${OUTPUT_ABS}" "${PLUGIN_NAME}/" \
   --exclude "*.DS_Store" \
   --exclude "*__pycache__*" \
-  --exclude "*.pyc"
+  --exclude "*.pyc")
+cp "${OUTPUT_ABS}" "${OUTPUT_FILE}"
+rm -rf "${STAGE}"
 
 echo "✅ Plugin generado: ${OUTPUT_FILE}"
 echo ""

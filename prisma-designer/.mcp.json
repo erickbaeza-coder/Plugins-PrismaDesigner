@@ -3,7 +3,7 @@
     "prisma-mcp": {
       "command": "node",
       "args": [
-        "/Users/erickbaezaroa/Desktop/Proyectos Claude/Discovery Agentico/06_Repos_GitHub/Plugins-PrismaDesigner/prisma-mcp/src/index.js"
+        "${CLAUDE_PLUGIN_ROOT}/prisma-mcp/src/index.js"
       ],
       "env": {
         "FIGMA_TOKEN": "${FIGMA_TOKEN}"
