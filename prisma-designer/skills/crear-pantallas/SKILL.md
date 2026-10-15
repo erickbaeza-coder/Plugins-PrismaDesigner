@@ -62,7 +62,7 @@ Llamar `validate_ds3_json` con el JSON recibido.
 > Con un DS3 que usa `secciones` puede responder "0 componentes / JSON válido" aunque tenga errores.
 > Si el resumen dice 0 componentes, **no lo tomes como válido**: validar manualmente cada componente de cada sección
 > (nombre, variante, props) con `resolve_component` / `list_prisma_components`.
-> Además, los nombres reales de la librería (`Wl*`) pueden no existir en el catálogo: si falla casi todo, es un problema del catálogo, no del DS3 (ver `/sync-prisma`).
+> Desde v3.3.0 el catálogo usa los nombres reales de la librería (`Wl*`) y todas sus variantes (`WlChip · State=Active`). Si un nombre `Wl*` no se encuentra, el generador no lo sustituye por otro: revisar el nombre en el DS3 o ejecutar `/sync-prisma`. Si la variante pedida no existe, usa la default y lo avisa en el resultado.
 
 ---
 
@@ -133,7 +133,7 @@ Extraer el bloque JavaScript del resultado y ejecutarlo via `use_figma`:
 
 **El script es un primer borrador, no el resultado final.** Intenta:
 - Crear o reutilizar una página con nombre `[proyecto] · [marca]`
-- Importar componentes de Prisma-Components (con la variante por defecto del catálogo)
+- Importar componentes de Prisma-Components (con la variante pedida en el DS3 con `Prop=Valor`; si no se pide, la default, que no es Skeleton/Error)
 - Aplicar el texto de `contenido` cuando el componente tiene `textConfig`
 - Aplicar el brand mode de la marca
 

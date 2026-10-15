@@ -14,6 +14,7 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { defaultScore } from './figma-api.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -474,9 +475,16 @@ export const SCREEN_PATTERNS = {
 };
 
 export class PrismaCatalog {
-  constructor() {
-    this._catalog = [...BASE_CATALOG];
+  constructor() { this._init(); }
+
+  /** Vuelve a leer prisma-keys.json (tras un sync) sin recrear el objeto. */
+  reload() { this._init(); }
+
+  _init() {
+    this._catalog = BASE_CATALOG.map(c => ({ ...c }));
     this._keyMap = {};
+    this._v4 = false;
+    this._libraries = [];
     // Pre-populate keyMap desde figmaKey del catálogo base
     for (const comp of this._catalog) {
       if (comp.figmaKey) {
@@ -488,12 +496,17 @@ export class PrismaCatalog {
       const keysPath = join(__dirname, 'prisma-keys.json');
       const stored = JSON.parse(readFileSync(keysPath, 'utf8'));
 
+      // v4: { _meta: { version: 4 }, libraries: { app: { sets }, web: { sets } } }
+      const isV4 = stored?._meta?.version === 4 && stored.libraries;
+
       // v3.2: detectar si es el nuevo formato { setName: { displayName, variants, _default } }
       // vs el viejo formato plano { "variantprops": "key" }
-      const isNewFormat = stored && typeof stored === 'object' &&
+      const isNewFormat = !isV4 && stored && typeof stored === 'object' &&
         Object.values(stored).some(v => v && typeof v === 'object' && v.variants);
 
-      if (isNewFormat) {
+      if (isV4) {
+        this._loadV4(stored.libraries);
+      } else if (isNewFormat) {
         // Nuevo formato: intentar resolver cada entrada del catálogo por figmaSetName + props
         for (const entry of this._catalog) {
           const key = _resolveKeyFromSets(entry, stored);
@@ -521,6 +534,75 @@ export class PrismaCatalog {
     } catch {
       // prisma-keys.json aún no existe — usar catálogo base
     }
+  }
+
+  /**
+   * v4: carga las librerías sincronizadas. Cada set real de Figma (WlHeader, WlChip…)
+   * pasa a ser una entrada del catálogo con TODAS sus variantes.
+   * Las entradas del catálogo base (nombres por grupo) quedan como alias "legacy":
+   * siguen resolviendo por nombre pero no se listan.
+   */
+  _loadV4(libraries) {
+    this._v4 = true;
+    this._libraries = Object.keys(libraries);
+    const order = ['app', 'web', ...this._libraries.filter(l => l !== 'app' && l !== 'web')]
+      .filter(l => libraries[l]);
+
+    for (const entry of this._catalog) entry.legacy = true;
+
+    // Legacy con figmaSetName explícito: refrescar su key desde la librería app
+    const appSets = libraries.app?.sets || {};
+    for (const entry of this._catalog) {
+      if (!entry.figmaSetName) continue;
+      const key = _resolveKeyFromSets(entry, appSets);
+      if (key) {
+        entry.figmaKey = key;
+        this._keyMap[normStr(entry.name)] = key;
+      }
+    }
+
+    for (const lib of order) {
+      for (const set of Object.values(libraries[lib].sets || {})) {
+        this._catalog.push({
+          group: set.group || 'Other',
+          name: set.displayName,
+          figmaSetName: set.displayName,
+          figmaKey: set._default,
+          library: lib,
+          platform: lib,
+          layoutType: guessLayoutType(set.displayName),
+          tags: makeTags(set.displayName, set.group),
+          variants: set.variants,
+          standalone: !!set.standalone,
+          v4: true
+        });
+      }
+    }
+  }
+
+  /** Librerías cargadas (['app','web']) o [] si el catálogo es el base. */
+  getLibraries() { return this._libraries || []; }
+
+  /** Entradas visibles: con v4 se ocultan los alias legacy. */
+  _visible() {
+    return this._v4 ? this._catalog.filter(c => !c.legacy) : this._catalog;
+  }
+
+  /**
+   * Elige la variante de una entrada v4 que cumple todas las props pedidas.
+   * Devuelve { key, exact }: exact=false si se pidió algo que no existe (cae al default).
+   */
+  _pickVariant(entry, wanted) {
+    const want = Object.entries(wanted || {}).map(([k, v]) =>
+      `${String(k).trim()}=${String(v).trim()}`.toLowerCase());
+    if (want.length === 0) return { key: entry.figmaKey, exact: true };
+    const matches = Object.entries(entry.variants || {}).filter(([vp]) => {
+      const parts = vp.split(',').map(s => s.trim());
+      return want.every(w => parts.includes(w));
+    });
+    if (matches.length === 0) return { key: entry.figmaKey, exact: false };
+    matches.sort((a, b) => defaultScoreOf(b[0]) - defaultScoreOf(a[0]));
+    return { key: matches[0][1], exact: true };
   }
 
   /** Enriquecer catálogo con keys reales de Figma (desde sync_prisma_library) — formato viejo */
@@ -621,8 +703,9 @@ export class PrismaCatalog {
   }
 
   /** Listar componentes (con filtro opcional) */
-  list(filter, group) {
-    let result = [...this._catalog];
+  list(filter, group, library) {
+    let result = [...this._visible()];
+    if (library) result = result.filter(c => !c.library || c.library === library);
     if (group) result = result.filter(c => normStr(c.group).includes(normStr(group)));
     if (filter) {
       const f = normStr(filter);
@@ -635,18 +718,43 @@ export class PrismaCatalog {
 
   /** Stats de cobertura */
   coverage() {
-    const total = this._catalog.length;
-    const withKey = this._catalog.filter(c => c.figmaKey).length;
-    return { total, withKey, missing: total - withKey, pct: Math.round((withKey / total) * 100) };
+    const vis = this._visible();
+    const total = vis.length;
+    const withKey = vis.filter(c => c.figmaKey).length;
+    return { total, withKey, missing: total - withKey, pct: total ? Math.round((withKey / total) * 100) : 0 };
   }
 
-  getGroups() { return [...new Set(this._catalog.map(c => c.group))]; }
+  getGroups() { return [...new Set(this._visible().map(c => c.group))]; }
   getAll()    { return [...this._catalog]; }
   exists(name) {
+    if (this._v4) return !!this.get(name);
     const n = normStr(name);
     return this._catalog.some(c => normStr(c.name) === n || normStr(c.name).includes(n));
   }
-  get(name) {
+
+  /** v4: resuelve "WlChip · State=Active" contra los sets reales. undefined = no decide. */
+  _getV4(name, opts = {}) {
+    if (String(name || '').includes('>')) return undefined; // formato legacy "Grupo > Nombre"
+    const { base, props } = parseNameProps(name);
+    const nb = normStr(base);
+    if (!nb) return undefined;
+    const cands = this._catalog.filter(c => c.v4 && normStr(c.name) === nb);
+    if (cands.length > 0) {
+      const entry = (opts.library && cands.find(c => c.library === opts.library)) || cands[0];
+      if (Object.keys(props).length === 0) return entry;
+      const { key, exact } = this._pickVariant(entry, props);
+      return { ...entry, figmaKey: key, requestedProps: props, variantExact: exact };
+    }
+    // Un nombre Wl* sin set exacto NO se adivina por parecido: que falle y se reporte.
+    if (nb.startsWith('wl')) return null;
+    return undefined;
+  }
+
+  get(name, opts = {}) {
+    if (this._v4) {
+      const r = this._getV4(name, opts);
+      if (r !== undefined) return r;
+    }
     const n = normStr(name);
 
     // 1. Exact normalized match
@@ -673,6 +781,36 @@ export class PrismaCatalog {
 
     return null;
   }
+}
+
+/** "WlChip · State=Active, Size=Sm" → { base: 'WlChip', props: { State: 'Active', Size: 'Sm' } } */
+export function parseNameProps(name) {
+  const parts = String(name || '').split('·');
+  const base = parts[0].trim();
+  const props = {};
+  for (const chunk of parts.slice(1).join(',').split(',')) {
+    const m = chunk.match(/^\s*([^=]+?)\s*=\s*(.+?)\s*$/);
+    if (m) props[m[1]] = m[2];
+  }
+  return { base, props };
+}
+
+function defaultScoreOf(propsStr) { return defaultScore(propsStr); }
+
+/** Posicionamiento según la tabla de márgenes propios medida (Working Rules §2). */
+function guessLayoutType(name) {
+  if (/^Wl(TopBar|Header|NavBar|StickyButton|Totalizer|ProductCardCart|EmptyStates|BottomSheet|TabNav|Tab)/i.test(name)) return 'full-bleed';
+  if (/^Wl(Chip|Tag|Badge)/i.test(name)) return 'inline';
+  return 'padded';
+}
+
+/** "WlProductCardCart" → ['wlproductcardcart', 'product', 'card', 'cart', 'product card cart', <grupo>] */
+function makeTags(displayName, group) {
+  const clean = String(displayName || '').replace(/^Wl/, '');
+  const words = clean.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_\-]/g, ' ').toLowerCase().split(/\s+/).filter(Boolean);
+  const tags = new Set([String(displayName).toLowerCase(), ...words, words.join(' ')]);
+  if (group) tags.add(String(group).toLowerCase());
+  return [...tags].filter(Boolean);
 }
 
 function normStr(str) {

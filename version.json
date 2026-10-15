@@ -1,7 +1,7 @@
 {
-  "version": "3.2.2",
+  "version": "3.3.0",
   "release_date": "2026-10-15",
-  "changelog": "v3.2.2 — Fase 0: reglas de trabajo (Prisma_Working_Rules), revisión obligatoria en crear-pantallas, límites conocidos del generador/validador, quality-gate con evidencia, resolver con ficha y sync con alcance real. Sin cambios en el MCP.",
-  "download_url": "https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest/download/prisma-designer-v3.2.2.plugin",
+  "changelog": "v3.3.0 — Catálogo real: el sync lee los component sets de Figma (WlHeader, WlChip, WlProductCardTFM…) con todas sus variantes y las dos librerías (App y Web). Resuelve estados (WlChip · State=Active), no sustituye nombres Wl* inexistentes y elige la variante default correcta. Incluye catálogo regenerado (304 componentes).",
+  "download_url": "https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest/download/prisma-designer-v3.3.0.plugin",
   "min_claude_version": "claude-sonnet-4-6"
 }

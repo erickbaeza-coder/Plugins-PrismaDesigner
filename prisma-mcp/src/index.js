@@ -18,7 +18,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { homedir } from 'os';
-import { FigmaAPI } from './figma-api.js';
+import { FigmaAPI, buildKeysFile } from './figma-api.js';
 import { PrismaCatalog } from './prisma-catalog.js';
 import { ComponentResolver } from './component-resolver.js';
 import { DS3Builder } from './ds3-builder.js';
@@ -65,17 +65,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: 'sync_prisma_library',
       description:
-        'Escanea el archivo Prisma-Components en Figma y enriquece el catálogo local con los component keys reales. ' +
-        'Ejecutar una vez antes de crear pantallas para maximizar el match de componentes.',
+        'Sincroniza el catálogo con las librerías Prisma en Figma (App y Web): indexa los component sets reales (WlHeader, WlChip…) ' +
+        'con TODAS sus variantes. Sin parámetros sincroniza las dos librerías oficiales. Requiere FIGMA_TOKEN.',
       inputSchema: {
         type: 'object',
         properties: {
           file_url: {
             type: 'string',
-            description: 'URL del archivo Prisma-Components en Figma (ej: https://www.figma.com/file/XXXX/Prisma-Components)'
+            description: 'Opcional. URL de una librería concreta (ej: https://www.figma.com/design/XXXX/Nombre). Si se omite, se sincronizan App y Web.'
+          },
+          library: {
+            type: 'string',
+            enum: ['app', 'web'],
+            description: 'Opcional. Etiqueta de la librería cuando se pasa file_url de un archivo no oficial.'
           }
-        },
-        required: ['file_url']
+        }
       }
     },
     {
@@ -273,42 +277,71 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // ── Handlers ──────────────────────────────────────────────────
 
-async function handleSyncLibrary({ file_url }) {
-  const fileKey = extractFileKey(file_url);
-  if (!fileKey) throw new Error('URL de Figma inválida. Formato esperado: https://www.figma.com/file/XXXX/...');
+// Librerías oficiales del sistema PRISMA (fileKey → id de librería)
+const KNOWN_LIBRARIES = [
+  { id: 'app', fileKey: 'LnYUTRFuwWpI9phwDCSHOx', name: 'APP-Prisma-Components' },
+  { id: 'web', fileKey: 'V4JC6ZQiNFEechja7p3W3A', name: 'Web Components' }
+];
 
-  // v3.2: usar getComponentSetsWithVariants para capturar contexto de set por variant
-  const setsWithVariants = await figmaApi.getComponentSetsWithVariants(fileKey);
+async function handleSyncLibrary({ file_url, library } = {}) {
+  // Qué librerías sincronizar: la indicada, o las dos oficiales (app + web)
+  let targets;
+  if (file_url) {
+    const fileKey = extractFileKey(file_url);
+    if (!fileKey) throw new Error('URL de Figma inválida. Formato esperado: https://www.figma.com/design/XXXX/...');
+    const known = KNOWN_LIBRARIES.find(l => l.fileKey === fileKey);
+    targets = [{ id: library || known?.id || 'app', fileKey, name: known?.name || fileKey }];
+  } else {
+    targets = KNOWN_LIBRARIES;
+  }
 
-  // Persistir en prisma-keys.json con estructura { setName: { variantProps: key } }
+  // Mantener las librerías ya sincronizadas que no se tocan ahora
   const keysPath = join(__dirname, 'prisma-keys.json');
-  writeFileSync(keysPath, JSON.stringify(setsWithVariants, null, 2));
+  let libraries = {};
+  try {
+    const prev = JSON.parse(readFileSync(keysPath, 'utf8'));
+    if (prev?._meta?.version === 4) libraries = prev.libraries || {};
+  } catch { /* primer sync */ }
 
-  // Actualizar el catálogo con los nuevos datos
-  const { updated, added } = catalog.updateFromFigmaV2(setsWithVariants);
+  const report = [];
+  for (const t of targets) {
+    try {
+      const idx = await figmaApi.getLibraryIndex(t.fileKey, t.id);
+      libraries[t.id] = { fileKey: t.fileKey, name: t.name, syncedAt: new Date().toISOString(), sets: idx.sets };
+      report.push({ ok: true, ...t, stats: idx.stats });
+    } catch (err) {
+      report.push({ ok: false, ...t, error: err.message });
+    }
+  }
 
-  const groups = catalog.getGroups();
+  if (!report.some(r => r.ok)) {
+    throw new Error(`No se pudo sincronizar ninguna librería:\n${report.map(r => `• ${r.id} (${r.name}): ${r.error}`).join('\n')}`);
+  }
+
+  writeFileSync(keysPath, JSON.stringify(buildKeysFile(libraries)));
+  catalog.reload();
+
   const cov = catalog.coverage();
-  const setCount = Object.keys(setsWithVariants).length;
-  const variantCount = Object.values(setsWithVariants).reduce((acc, s) => acc + Object.keys(s.variants).length, 0);
-
-  return {
-    content: [{
-      type: 'text',
-      text: [
-        `✅ Sync completado (v3.2 — con contexto de component set)`,
-        ``,
-        `• Component sets encontrados en Figma: ${setCount}`,
-        `• Variantes totales indexadas: ${variantCount}`,
-        `• Catálogo actualizado: ${updated} entradas actualizadas, ${added} nuevas`,
-        `• Cobertura del catálogo: ${cov.withKey}/${cov.total} componentes con key (${cov.pct}%)`,
-        `• Grupos disponibles: ${groups.join(', ')}`,
-        ``,
-        `prisma-keys.json guardado con estructura set→variantes para lookups precisos.`,
-        `Podés usar create_screens_from_ds3 o create_screens_from_prompts.`
-      ].join('\n')
-    }]
-  };
+  const lines = [`✅ Sync completado (v4 — sets reales con todas sus variantes)`, ``];
+  for (const r of report) {
+    if (!r.ok) { lines.push(`⚠️ ${r.id} (${r.name}): falló — ${r.error}`); continue; }
+    const s = r.stats;
+    lines.push(
+      `• ${r.id} · ${r.name}: ${s.sets} componentes (${s.variants} variantes; ${s.linked} enlazadas a su set, ` +
+      `${s.standalone} sueltos sin variantes${s.orphanGroups ? `, ${s.orphanGroups} grupos sin set` : ''}` +
+      `${s.duplicateNames ? `, ${s.duplicateNames} nombres repetidos` : ''}${s.skipped ? `, ${s.skipped} descartados` : ''})`
+    );
+  }
+  lines.push(
+    ``,
+    `• Catálogo: ${cov.withKey}/${cov.total} componentes con key (${cov.pct}%)`,
+    `• Librerías cargadas: ${catalog.getLibraries().join(', ')}`,
+    ``,
+    `Los nombres Wl* ahora resuelven directo (ej. \`WlProductCardCart\`, \`WlChip · State=Active\`). ` +
+    `Si un nombre Wl* no existe, falla en validate_ds3_json en vez de elegir otro parecido.`,
+    `Para compartir este catálogo con el equipo hay que publicar una nueva versión del plugin.`
+  );
+  return { content: [{ type: 'text', text: lines.join('\n') }] };
 }
 
 // ── Figma Script Generator v3.1 ──────────────────────────────
@@ -681,6 +714,13 @@ function _emitComponent(L, comp, parentVar, missingKeys, screenId, isGridCell) {
     return;
   }
 
+  // v4: se pidió una variante que no existe en el set → usa el default y lo avisa
+  if (entry.variantExact === false) {
+    (missingKeys.variantMisses ||= []).push(
+      `${screenId}: "${compName}" — variante pedida (${JSON.stringify(entry.requestedProps)}) no existe en ${entry.library || 'app'}; se usó la default`);
+    L.push(`// ⚠️ variante no encontrada: ${JSON.stringify(entry.requestedProps)} → default`);
+  }
+
   const contenido = comp.contenido || '';
   const hasText = contenido && entry.textConfig;
 
@@ -894,6 +934,11 @@ async function handleCreateScreensFromDS3({ ds3_json, figma_file_url }) {
   if (missingKeys.length > 0) {
     lines.push(`> ⚠️ **${missingKeys.length} componente(s) sin figmaKey** — quedan como comentarios TODO en el script:`);
     missingKeys.forEach(k => lines.push(`> • ${k}`));
+    lines.push(``);
+  }
+  if (missingKeys.variantMisses?.length > 0) {
+    lines.push(`> ⚠️ **${missingKeys.variantMisses.length} variante(s) pedida(s) que no existen** — se usó la variante por defecto, revisar:`);
+    missingKeys.variantMisses.forEach(k => lines.push(`> • ${k}`));
     lines.push(``);
   }
   lines.push(`---`);

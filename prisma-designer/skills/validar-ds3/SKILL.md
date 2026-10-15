@@ -45,8 +45,8 @@ Esto valida contra el catálogo: nombres de componentes, grupos válidos, props 
 
 > ⚠️ **Límites conocidos del validador (v3.2.x):**
 > 1. **No lee `secciones`**: solo `pantalla.componentes`. Con el schema v2 puede devolver "0 componentes / válido". Si el resumen muestra 0 componentes, **no reportar como válido**; validar a mano recorriendo `secciones[].componentes[]`.
-> 2. **Catálogo ≠ librería real**: usa nombres propios por grupo, no `Wl*`. Un DS3 con nombres de Figma puede fallar casi entero. Distinguir en el reporte "error del DS3" de "componente no indexado por el catálogo" y sugerir `/sync-prisma`.
-> 3. **No valida variantes**: el generador usa la variante por defecto del catálogo. Avisar que las variantes pedidas (`Type=…`, `State=…`) **no se garantizan** y deben verificarse tras generar.
+> 2. **Catálogo = librería real (v3.3.0)**: usa los sets `Wl*` de App y Web. Un nombre `Wl*` no encontrado es un error del DS3 (o del catálogo si la librería es más nueva que la última sync: sugerir `/sync-prisma`). No se sustituye por un nombre parecido.
+> 3. **Variantes**: el generador resuelve `Prop=Valor` contra las variantes reales del set; si no existe, usa la default y lo avisa. Aun así, verificar tras generar. Las propiedades llevan el nombre exacto de Figma (p. ej. `WlAlert`: `State=Warning`, `Type=White|Color`).
 > 4. **No valida textos por capa** (`textOverrides`): el generador solo aplica `contenido`. Advertirlo si el DS3 trae `textOverrides`.
 
 ---

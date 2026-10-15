@@ -10,56 +10,44 @@ description: >
 
 ## Qué hace esta skill
 
-Lee el archivo Prisma-Components en Figma vía REST API y actualiza el catálogo
-local del MCP con los keys reales de cada componente. Esto enriquece el JSON
-generado por `/crear-pantallas` con los keys exactos de Figma.
+Lee las librerías Prisma en Figma vía REST API (App y Web) y actualiza el catálogo local del MCP con los **component sets reales** (`WlHeader`, `WlChip`, `WlProductCardCart`…) y **todas sus variantes**. Los nombres `Wl*` del DS3 resuelven directo, incluidos estados (`WlChip · State=Active`).
 
-## URL oficial de Prisma-Components · Cencosud
+## Librerías oficiales · Cencosud
 
-```
-https://www.figma.com/design/LnYUTRFuwWpI9phwDCSHOx/Prisma-Components
-```
-
-Usar esta URL por defecto salvo que el diseñador indique otra explícitamente.
+| Librería | Archivo |
+|---|---|
+| App | `https://www.figma.com/design/LnYUTRFuwWpI9phwDCSHOx/APP-Prisma-Components` |
+| Web | `https://www.figma.com/design/V4JC6ZQiNFEechja7p3W3A/Web-Components` |
 
 ## Flujo de ejecución
 
-### Paso 1 — Obtener la URL
+### Paso 1 — Qué sincronizar
 
-Si el diseñador pegó una URL, usarla directamente.
-Si no, usar la URL oficial de Cencosud y confirmar:
-> "Voy a sincronizar con Prisma-Components de Cencosud. ¿Continúo?"
+Por defecto, **las dos librerías** (llamar `sync_prisma_library` sin parámetros). Si el diseñador pegó una URL concreta, pasarla en `file_url` (y `library: "app" | "web"` si no es una de las oficiales). Sincronizar una librería no borra la otra.
 
 ### Paso 2 — Sincronizar
 
-Llamar `sync_prisma_library` con la URL.
-
-Mientras sincroniza:
-> "Sincronizando con Prisma-Components..."
+> "Sincronizando App y Web de Prisma..."
 
 ### Paso 3 — Reportar resultado
 
-Reportar lo que el sync **realmente** trajo; no decir "catálogo actualizado" sin comprobarlo.
+Reportar lo que el sync **realmente** trajo, copiando las cifras de la respuesta de la herramienta:
 
 ```
 ✅ Sincronización completada
 
-Archivo / librería: [nombre] · [App | Web]
-Component sets leídos: [N]
-Variantes indexadas: [N]
+App · [N] componentes ([N] variantes; [N] enlazadas a su set, [N] sueltos)
+Web · [N] componentes ([N] variantes; [N] enlazadas a su set, [N] sueltos)
 Última sync: [fecha/hora]
-
-⚠️ Alcance real:
-• "N con key" significa que la key existe en prisma-keys.json, NO que el generador la use.
-  El generador resuelve por el catálogo base (nombres propios por grupo); un componente nuevo
-  o con nombre `Wl*` puede no resolverse aunque tenga key.
-• Solo se sincroniza UNA librería por llamada. Si el DS3 usa componentes de otra (marca o web),
-  ejecutar el sync también con ese archivo — pero el catálogo hoy no etiqueta la plataforma:
-  nombres repetidos (WlTag, WlHeader, WlToggle) pueden resolverse a la librería equivocada.
-• Solo se guardan variantes de componentes PUBLICADOS en la librería.
 ```
 
-Tras sincronizar, verificar con 2–3 componentes del DS3 (`resolve_component` con su nombre `Wl*`) que el catálogo los reconoce. Si no, avisar que el catálogo no cubre los nombres reales y que el flujo necesitará corrección manual de variantes.
+Verificar con 2–3 nombres `Wl*` del DS3 que el catálogo los reconoce (`validate_ds3_json` o `resolve_component`).
+
+Notas de alcance:
+• Si un nombre `Wl*` no existe en el catálogo, **falla** (no se sustituye por uno parecido): hay que corregir el DS3 o sincronizar de nuevo.
+• Nombres repetidos entre librerías (`WlTag`, `WlHeader`, `WlToggle`): sin indicación se usa **App**.
+• Solo se indexan componentes **publicados** en la librería.
+• El catálogo sincronizado vive en tu instalación; para que el resto del equipo lo reciba hay que publicar una nueva versión del plugin (mantenedores: `node prisma-mcp/scripts/sync-keys.mjs`).
 
 Si hay error 403 de token:
 > "⚠️ Token de Figma inválido o ausente. Guardalo en el archivo `~/.prisma-mcp-token` (solo el token, `chmod 600`) y reiniciá Cowork. Cowork se abre desde el Dock y **no lee `~/.zshrc`**, por eso la variable de entorno puede no llegar. Obtené un token en: Figma → Settings → Security → Personal access tokens (permiso de lectura de archivos)."

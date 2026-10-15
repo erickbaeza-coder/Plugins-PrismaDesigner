@@ -1,4 +1,4 @@
-# Prisma Designer Plugin v3.2 · Cencosud
+# Prisma Designer Plugin v3.3 · Cencosud
 
 Plugin para diseñadores UX del equipo Whitelabel de Cencosud. Convierte DS3 JSON en pantallas directamente en Figma, valida calidad de diseño contra las Prisma Design Rules, y ejecuta Quality Gate con scoring de 100 puntos.
 
@@ -56,7 +56,7 @@ Si falla: confirma `node -v` (Paso 1), reinicia Cowork y revisa que el plugin ap
 
 ### Paso 6 — Sincronizar catálogo (opcional, solo mantenedores)
 
-Ejecuta `/sync-prisma`. Refresca el catálogo desde Prisma-Components en Figma. Tras sincronizar, hay que publicar una nueva versión del plugin para que el resto del equipo reciba el catálogo actualizado.
+Ejecuta `/sync-prisma`. Refresca el catálogo desde las librerías App y Web en Figma (component sets reales `Wl*` con todas sus variantes). Tras sincronizar, hay que publicar una nueva versión del plugin para que el resto del equipo reciba el catálogo actualizado.
 
 ## Design Rules incluidas (v3.0)
 
@@ -84,11 +84,14 @@ El plugin incorpora 7 archivos de reglas de diseño que se aplican automáticame
 
 ## Archivo Prisma-Components
 
-URL oficial:
+Librerías oficiales:
 ```
-https://www.figma.com/design/LnYUTRFuwWpI9phwDCSHOx/Prisma-Components
+App: https://www.figma.com/design/LnYUTRFuwWpI9phwDCSHOx/APP-Prisma-Components
+Web: https://www.figma.com/design/V4JC6ZQiNFEechja7p3W3A/Web-Components
 ```
+
+Mantenedores: `node prisma-mcp/scripts/sync-keys.mjs` regenera `prisma-mcp/src/prisma-keys.json` para publicarlo con el plugin.
 
 ## Versión
 
-v3.2.2 · Octubre 2026 · Whitelabel UX Team · Cencosud
+v3.3.0 · Octubre 2026 · Whitelabel UX Team · Cencosud
