@@ -45,6 +45,8 @@ mkdir -p "${STAGE}/${PLUGIN_NAME}/prisma-mcp"
 MCP_DIR="${STAGE}/${PLUGIN_NAME}/prisma-mcp"
 mkdir -p "${MCP_DIR}/src"
 cp prisma-mcp/src/*.json "${MCP_DIR}/src/"
+# Instalar dependencias si faltan (CI no trae node_modules)
+[ -d prisma-mcp/node_modules/@modelcontextprotocol ] || (cd prisma-mcp && npm ci --silent)
 (cd prisma-mcp && npx --yes esbuild@0.24.0 src/index.js --bundle --platform=node --format=esm \
   --banner:js="import{createRequire as __cr}from'module';const require=__cr(import.meta.url);" \
   --outfile="${MCP_DIR}/src/index.js" --log-level=warning)
