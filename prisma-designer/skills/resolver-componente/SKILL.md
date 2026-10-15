@@ -19,6 +19,7 @@ usar en un DS3 JSON.
 Antes de ejecutar, el agente **DEBE leer**:
 
 1. `references/rules/Prisma_Component_Rules.md` — Orden de decisión, properties, variants, gap documentation
+2. `references/rules/Prisma_Working_Rules.md` — Tabla de márgenes propios y limitaciones conocidas de componentes
 
 El agente debe seguir el orden de decisión de Component Rules:
 componente existente → variante → property → slot → composición → nuevo componente (solo si hay gap real).
@@ -35,6 +36,12 @@ Si el diseñador no la dio, pedirla:
 
 Llamar `resolve_component` con la descripción del diseñador.
 
+> ⚠️ **La búsqueda por texto libre es poco precisa** (en una prueba, 4 de 16 consultas dieron el componente correcto: confunde chips con carruseles, alertas con títulos, top bar con título con uno sin título). Por eso:
+> - **Mostrar siempre hasta 3 candidatos** con la razón de cada uno, no solo el primero.
+> - **Contrastar con el nombre real de la librería** (`Wl*`, p. ej. `WlTopBarTitle`, `WlChip`, `WlAlert`) antes de afirmar que es el correcto; si el resultado no tiene prefijo `Wl*`, avisar que viene del catálogo propio.
+> - Si dudas, **confirmar en Figma** (`search_design_system`) y decirlo.
+> - Cuando el diseñador nombre un componente exacto, buscar por ese nombre, no por descripción.
+
 ### Paso 3 — Mostrar resultado
 
 **Si encuentra match con alta confianza (>80%):**
@@ -42,12 +49,19 @@ Llamar `resolve_component` con la descripción del diseñador.
 ✅ Componente encontrado
 
 Nombre: [nombre exacto]
-Grupo: [grupo]
+Grupo / librería: [grupo] · [App | Web]
 Confianza: [N]%
+
+Ficha:
+• Variantes y props: [Type, State, Size… booleanas, texto, swap]  ← si el MCP no las devuelve, escribir "no indexadas"
+• Margen propio: [Sí | No | No verificado]  → ¿necesita contenedor? [No: directo al frame | Sí: mínimo 16 px]
+• Ancho esperado: [375 | variable | no verificado]
+• Limitaciones conocidas: [ver Working Rules §7, o "ninguna conocida"]
 
 Sintaxis para DS3:
 "componente": "[nombre exacto · Props=Valores]"
 ```
+Margen y ancho salen de la tabla de `Prisma_Working_Rules.md` §2 (librería de **app**). En web, decir "no verificado".
 
 **Si encuentra match con confianza media (50-80%):**
 ```
@@ -69,6 +83,8 @@ Las opciones más cercanas son:
 Si ninguna sirve, puedo generar una composición usando /crear-pantallas
 con tipo "composicion" + un prompt de Figma Make para crearlo desde cero.
 ```
+
+**Si el componente no existe (gap real):** no proponer una composición con piezas inadecuadas. Declarar el gap según Component Rules §6: necesidad, alternativas evaluadas (y por qué no sirven), tokens requeridos y solución provisional. Ejemplos ya documentados: combo con 3 ítems, bottom sheet con contenido propio, banner con tarjeta de copy.
 
 ### Paso 4 — Listar componentes disponibles (opcional)
 

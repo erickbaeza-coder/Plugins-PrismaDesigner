@@ -1,7 +1,7 @@
 {
-  "version": "3.2.1",
-  "release_date": "2026-10-14",
-  "changelog": "v3.2.1 — MCP incluido dentro del plugin (ruta portable con ${CLAUDE_PLUGIN_ROOT}); catálogo Prisma actualizado a 110 componentes.",
-  "download_url": "https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest/download/prisma-designer-v3.2.1.plugin",
+  "version": "3.2.2",
+  "release_date": "2026-10-15",
+  "changelog": "v3.2.2 — Fase 0: reglas de trabajo (Prisma_Working_Rules), revisión obligatoria en crear-pantallas, límites conocidos del generador/validador, quality-gate con evidencia, resolver con ficha y sync con alcance real. Sin cambios en el MCP.",
+  "download_url": "https://github.com/erickbaeza-coder/Plugins-PrismaDesigner/releases/latest/download/prisma-designer-v3.2.2.plugin",
   "min_claude_version": "claude-sonnet-4-6"
 }

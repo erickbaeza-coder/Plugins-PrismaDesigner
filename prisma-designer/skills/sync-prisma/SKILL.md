@@ -39,17 +39,32 @@ Mientras sincroniza:
 
 ### Paso 3 — Reportar resultado
 
+Reportar lo que el sync **realmente** trajo; no decir "catálogo actualizado" sin comprobarlo.
+
 ```
 ✅ Sincronización completada
 
-Componentes encontrados: [N]
+Archivo / librería: [nombre] · [App | Web]
+Component sets leídos: [N]
+Variantes indexadas: [N]
 Última sync: [fecha/hora]
 
-El catálogo está actualizado. Podés usar /crear-pantallas con los keys reales.
+⚠️ Alcance real:
+• "N con key" significa que la key existe en prisma-keys.json, NO que el generador la use.
+  El generador resuelve por el catálogo base (nombres propios por grupo); un componente nuevo
+  o con nombre `Wl*` puede no resolverse aunque tenga key.
+• Solo se sincroniza UNA librería por llamada. Si el DS3 usa componentes de otra (marca o web),
+  ejecutar el sync también con ese archivo — pero el catálogo hoy no etiqueta la plataforma:
+  nombres repetidos (WlTag, WlHeader, WlToggle) pueden resolverse a la librería equivocada.
+• Solo se guardan variantes de componentes PUBLICADOS en la librería.
 ```
 
+Tras sincronizar, verificar con 2–3 componentes del DS3 (`resolve_component` con su nombre `Wl*`) que el catálogo los reconoce. Si no, avisar que el catálogo no cubre los nombres reales y que el flujo necesitará corrección manual de variantes.
+
 Si hay error 403 de token:
-> "⚠️ Token de Figma inválido. Asegurate de que FIGMA_TOKEN esté configurado como variable de entorno del sistema antes de abrir Cowork. Obtené un token en: Figma → Settings → Security → Personal access tokens."
+> "⚠️ Token de Figma inválido o ausente. Guardalo en el archivo `~/.prisma-mcp-token` (solo el token, `chmod 600`) y reiniciá Cowork. Cowork se abre desde el Dock y **no lee `~/.zshrc`**, por eso la variable de entorno puede no llegar. Obtené un token en: Figma → Settings → Security → Personal access tokens (permiso de lectura de archivos)."
 
 Si hay error de acceso al archivo:
 > "⚠️ Sin acceso al archivo. Verificá que el token tenga permisos de lectura sobre Prisma-Components."
+
+> El token solo hace falta para `/sync-prisma`. Un diseñador que solo crea pantallas no lo necesita: el catálogo viene incluido en el plugin.

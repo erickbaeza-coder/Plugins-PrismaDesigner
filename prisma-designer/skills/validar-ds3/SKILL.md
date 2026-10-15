@@ -24,6 +24,7 @@ Antes de ejecutar, el agente **DEBE leer** estas references:
 2. `references/rules/Prisma_Component_Rules.md` — Reglas de selección y composición
 3. `references/rules/Prisma_Accessibility_Rules.md` — Contraste, targets, estados, tipografía
 4. `references/rules/Prisma_Screen_Playbook.md` — Método de construcción de pantallas
+5. `references/rules/Prisma_Working_Rules.md` — Estructura plana, estados, limitaciones conocidas y plataformas
 
 ---
 
@@ -41,6 +42,12 @@ Si el diseñador no lo pegó, pedirlo:
 Llamar `validate_ds3_json` con el JSON recibido.
 
 Esto valida contra el catálogo: nombres de componentes, grupos válidos, props existentes.
+
+> ⚠️ **Límites conocidos del validador (v3.2.x):**
+> 1. **No lee `secciones`**: solo `pantalla.componentes`. Con el schema v2 puede devolver "0 componentes / válido". Si el resumen muestra 0 componentes, **no reportar como válido**; validar a mano recorriendo `secciones[].componentes[]`.
+> 2. **Catálogo ≠ librería real**: usa nombres propios por grupo, no `Wl*`. Un DS3 con nombres de Figma puede fallar casi entero. Distinguir en el reporte "error del DS3" de "componente no indexado por el catálogo" y sugerir `/sync-prisma`.
+> 3. **No valida variantes**: el generador usa la variante por defecto del catálogo. Avisar que las variantes pedidas (`Type=…`, `State=…`) **no se garantizan** y deben verificarse tras generar.
+> 4. **No valida textos por capa** (`textOverrides`): el generador solo aplica `contenido`. Advertirlo si el DS3 trae `textOverrides`.
 
 ---
 
@@ -79,12 +86,14 @@ El agente analiza el DS3 JSON aplicando las Design Rules. Evalúa cada pantalla 
 - [ ] ¿Los textos de contenido tienen roles claros (título, body, metadata, helper)?
 - [ ] ¿Se usan componentes con estados distinguibles (no solo color)?
 
-#### E. Completitud de estados (UI Rules)
+#### E. Completitud de estados (UI Rules + Working Rules §4)
 
 - [ ] ¿Se contemplan estados loading/skeleton donde aplique?
 - [ ] ¿Se contempla estado empty cuando el contenido puede estar vacío?
 - [ ] ¿Se contempla estado error cuando hay interacción o carga de datos?
 - [ ] ¿La pantalla funciona con contenido real (textos largos, precios variables)?
+- [ ] ¿El DS3 declara los estados (`estados`) que las recetas necesitan (loading → Skeleton, vacío, error, sin stock)? Si faltan, advertir; el generador no los crea.
+- [ ] ¿Define `frame` (ancho/alto) y plataforma? Si no, advertir que se usará 390×844.
 
 #### F. Motion (Motion Rules)
 
@@ -143,8 +152,9 @@ MEJORABLES (no bloquean pero mejorarían el score):
 NOTAS:
 • [Observaciones informativas]
 
-Quality Score estimado: [N]/100
 ```
+
+> No incluir un "Quality Score estimado". La validación de DS3 no mide la pantalla; el puntaje solo se da con `/quality-gate` y evidencia.
 
 Para cada error, explicar en lenguaje simple qué está mal, qué rule aplica, y cuál sería la mejora.
 

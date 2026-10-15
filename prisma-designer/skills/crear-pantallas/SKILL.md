@@ -27,6 +27,7 @@ Antes de ejecutar, el agente **DEBE leer** estas references:
 2. `references/rules/Prisma_Screen_Playbook.md` — Método paso a paso para construir pantallas
 3. `references/rules/Prisma_Component_Rules.md` — Reglas de selección y composición de componentes
 4. `references/rules/Prisma_Design_System_UI_Rules.md` — Constitución general del sistema
+5. `references/rules/Prisma_Working_Rules.md` — **Reglas de trabajo**: estructura plana, dónde van los tokens, estados, accesibilidad, revisión obligatoria y limitaciones conocidas. Si chocan con otra regla, estas prevalecen cuando el MCP no es fiel al DS3.
 
 El agente debe internalizar estas reglas y aplicarlas durante todo el flujo.
 
@@ -56,6 +57,12 @@ Llamar `validate_ds3_json` con el JSON recibido.
 - **Errores** → mostrarlos con sugerencia de fix y detener el flujo
 - **Warnings** → mostrarlos y preguntar si continúa igual
 - **Todo OK** → continuar
+
+> ⚠️ **Límite conocido de `validate_ds3_json`:** solo recorre `pantalla.componentes`; **no lee `secciones`**.
+> Con un DS3 que usa `secciones` puede responder "0 componentes / JSON válido" aunque tenga errores.
+> Si el resumen dice 0 componentes, **no lo tomes como válido**: validar manualmente cada componente de cada sección
+> (nombre, variante, props) con `resolve_component` / `list_prisma_components`.
+> Además, los nombres reales de la librería (`Wl*`) pueden no existir en el catálogo: si falla casi todo, es un problema del catálogo, no del DS3 (ver `/sync-prisma`).
 
 ---
 
@@ -124,12 +131,40 @@ Extraer el bloque JavaScript del resultado y ejecutarlo via `use_figma`:
 - **description**: "Crear pantallas DS3 · [proyecto] · [marca]"
 - **code**: el script JavaScript completo del bloque de código
 
-El script hace todo automáticamente:
-- Crea o reutiliza una página con nombre `[proyecto] · [marca]`
-- Importa los componentes reales de Prisma-Components
-- Aplica textos del DS3 a cada componente
-- Aplica el brand mode de la marca a todos los frames
-- Las composiciones quedan como `// TODO [composición]` para armar manualmente
+**El script es un primer borrador, no el resultado final.** Intenta:
+- Crear o reutilizar una página con nombre `[proyecto] · [marca]`
+- Importar componentes de Prisma-Components (con la variante por defecto del catálogo)
+- Aplicar el texto de `contenido` cuando el componente tiene `textConfig`
+- Aplicar el brand mode de la marca
+
+**Limitaciones conocidas del generador** (verificar en el Paso 5b, no asumir que funcionó):
+- Puede elegir una variante equivocada (header o combo en Skeleton, alerta en Error, chip siempre Default).
+- **No aplica `textOverrides`**; solo `contenido`. Los textos pueden quedar en placeholder.
+- Usa un frame fijo 390×844 e ignora `frame` y la plataforma del DS3.
+- No genera estados ni imágenes.
+- Dos secciones `padded` anidadas producen padding doble.
+- Un script con varias pantallas puede superar el tiempo de `use_figma`; un error revierte todo. Si el script es largo, **partirlo por pantalla** y ejecutar una por llamada, reutilizando elementos por nombre.
+- El modo de marca puede no aplicarse (API síncrona): verificarlo.
+- Composiciones y gaps pueden no generarse o quedar como `// TODO`.
+
+---
+
+### Paso 5b — Revisión obligatoria (no saltar)
+
+Tras ejecutar, **revisar cada pantalla antes de reportar**, con captura de pantalla de Figma por pantalla:
+
+1. Seguir la lista de `Prisma_Working_Rules.md` §6 (tamaño de frame, variante correcta, textos aplicados, jerarquía ≤ 2, tokens, contraste, estados).
+2. Corregir lo que el generador dejó mal (variantes, textos, frame, padding doble, contenedores de un hijo) con scripts cortos e idempotentes.
+3. Crear los **estados** que pida el DS3 con las recetas de §4 (`P0X-B`, `P0X-C`…, en una fila aparte).
+4. Medir **accesibilidad** (§5): contraste, tamaños táctiles según plataforma. Separar hallazgos de la pantalla vs hallazgos de la librería.
+5. Anotar qué es dato real y qué es ejemplo.
+
+**Regla de cierre:** no escribir "Pantallas creadas" mientras queden placeholders de librería, variantes erróneas o textos sin aplicar. Reportar el estado real:
+
+```
+Estado: ✅ Revisadas | 🟡 Con pendientes | ❌ Requiere rehacer
+Pendientes: [lista exacta]
+```
 
 ---
 
@@ -138,6 +173,7 @@ El script hace todo automáticamente:
 Con la respuesta de `use_figma`, entregar el reporte completo siguiendo el formato del Gold Standard Screen Prompt:
 
 ```
+[Usar solo si el Paso 5b quedó sin pendientes; si no, "🟡 Pantallas creadas con pendientes"]
 ✅ Pantallas creadas en Figma
 
 Página    : [nombre de la página]
@@ -162,10 +198,13 @@ Brand mode: "[marca]" aplicado ✓
 [Categorías de tokens aplicadas: color, typography, spacing, radius, etc.]
 
 ### States
-[Estados diseñados vs. pendientes de diseñar]
+[Estados creados vs. pendientes, con el nombre de cada frame]
 
 ### Accessibility
-[Observaciones de accesibilidad basadas en las Prisma Accessibility Rules]
+[Contraste y tamaños táctiles MEDIDOS (con valores). Separar: "Falla de la pantalla" vs "Hallazgo de librería (para equipo Prisma)". Texto sobre imagen/gradiente: "revisión manual".]
+
+### Datos de ejemplo
+[Lista de textos, precios o cantidades que son de relleno]
 
 ### Motion
 [Recomendaciones de motion basadas en las Prisma Motion Rules]
@@ -177,13 +216,9 @@ Brand mode: "[marca]" aplicado ✓
 [Componentes no existentes en Prisma, o "Ninguno"]
 
 ### Quality Score
-[Score estimado sobre 100 basado en el Quality Gate de UI Rules]
-• Estructura: __/20
-• Design System: __/25
-• Visual: __/20
-• Accesibilidad: __/15
-• UX: __/10
-• Performance: __/10
+No estimar. Mostrar el puntaje solo si cada criterio tiene evidencia medida; de lo contrario escribir
+"Sin medir — ejecutar `/quality-gate` con las capturas" y listar los criterios que sí se midieron
+(estructura, contraste, tamaños táctiles).
 
 ### Critical Issues
 [Problemas que impiden Gold Standard, o "Ninguno"]
@@ -302,9 +337,9 @@ Si el JSON no tiene ni `secciones` ni campo `seccion`, el generador detecta auto
 
 **El MCP escribe directamente al canvas de Figma** — no se necesita el plugin Prisma Builder ni Figma Make para los componentes del sistema de diseño. Este es el cambio central respecto al flujo anterior.
 
-**Composiciones** ahora se crean como sub-frames con Auto Layout que contienen los sub-componentes reales de Prisma. Ya no quedan como simples `// TODO`.
+**Composiciones** se crean como sub-frames con Auto Layout con los sub-componentes de Prisma, pero **no sustituyen a un componente de librería**: si existe un gap real, documentarlo (Component Rules §6) en vez de forzar una composición.
 
-**Brand mode** se aplica automáticamente desde el campo `marca` del JSON, aplicando colores, tipografía y tokens de la marca correcta a todos los frames via Figma Variable Modes.
+**Brand mode** se intenta aplicar desde el campo `marca` del JSON vía Figma Variable Modes. Verificar que quedó aplicado; si falla, reaplicarlo con la API asíncrona de variables.
 
 **Página destino**: el script crea o reutiliza una página con nombre `[proyecto] · [marca]`. Si ya existe, los frames se agregan en esa misma página.
 

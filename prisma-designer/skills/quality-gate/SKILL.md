@@ -26,8 +26,19 @@ Antes de ejecutar, el agente **DEBE leer** TODAS estas references:
 4. `references/rules/Prisma_Accessibility_Rules.md` — Contraste, targets, estados, tipografía
 5. `references/rules/Prisma_Motion_Rules.md` — Movimiento y microinteracciones
 6. `references/rules/Prisma_Gold_Standard_Screen_Prompt.md` — Prompt maestro y formato de entrega
+7. `references/rules/Prisma_Working_Rules.md` — Estructura plana, dónde van los tokens, accesibilidad medida y limitaciones de componentes
 
 El agente debe internalizar todas las reglas antes de evaluar.
+
+### Principios de evaluación (v3.2.2)
+
+1. **Medir, no estimar.** Cada criterio puntuado lleva su **evidencia** (captura, valor medido o dato del JSON). Un criterio sin evidencia se marca "sin medir" y **no suma ni resta**; el score se informa como "[N]/[máx. medible]".
+2. **Diseño propio vs estructura.** "Valores hardcoded" aplica a color, texto y radio de **nodos propios**. El spacing/padding de contenedores estructurales de auto-layout **no** se penaliza ni se exige tokenizar (Working Rules §3).
+3. **Separar origen del hallazgo.** Clasificar cada problema como *Falla de la pantalla* (descuenta puntos) o *Hallazgo de la librería* (para el equipo Prisma; **no descuenta** a la pantalla), p. ej. chips o botones de librería bajo 44 px, ribbon que no se oculta, variantes con bajo contraste.
+4. **Estructura plana** (Working Rules §2): profundidad ≤ 2 y sin contenedores de un solo hijo cuentan en *Estructura / Layout estructurado*.
+5. **Estados explícitos:** los estados pedidos (loading, vacío, error, sin stock) deben existir como frames; si solo se mencionan, cuentan como ausentes en *UX / Estados contemplados*.
+6. **Accesibilidad con números:** contraste con la razón medida (4,5:1; 3:1 texto grande), tamaños según plataforma (44 pt iOS, 48 dp Android, 24 px mín. web). Texto sobre imagen/gradiente → "revisión manual".
+7. **Un gap de componente justificado no descuenta** más allá de lo que indique Component Rules §6.
 
 ---
 
@@ -157,7 +168,8 @@ Entregar el reporte completo por pantalla:
 ```
 ## Quality Gate — [Nombre pantalla]
 
-### Score: [N]/100 — [Calificación]
+### Score: [N]/[máx. medible] — [Calificación]
+Criterios sin medir: [lista, o "ninguno"]
 
 | Dimensión | Score | Max |
 |---|---|---|
@@ -204,6 +216,9 @@ destacando solo las que revelaron problemas]
 ### Recomendaciones para Gold Standard
 [Lista priorizada de mejoras concretas y accionables.
 Para cada una, indicar qué dimensión mejora y cuántos puntos estimados sumaría]
+
+### Hallazgos de la librería (para el equipo Prisma)
+[Componentes o variantes de librería con problema (contraste, tamaño táctil, props faltantes). No descuentan a la pantalla.]
 
 ### Token Gaps detectados
 [Tokens que no existen y se necesitarían, o "Ninguno"]

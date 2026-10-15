@@ -60,7 +60,7 @@ Ejecuta `/sync-prisma`. Refresca el catálogo desde Prisma-Components en Figma. 
 
 ## Design Rules incluidas (v3.0)
 
-El plugin incorpora 6 archivos de reglas de diseño que se aplican automáticamente:
+El plugin incorpora 7 archivos de reglas de diseño que se aplican automáticamente:
 
 | Rule | Qué define |
 |---|---|
@@ -70,6 +70,7 @@ El plugin incorpora 6 archivos de reglas de diseño que se aplican automáticame
 | Accessibility Rules | Contraste, targets, tipografía, estados, iconografía |
 | Motion Rules | Principios de movimiento, candidatos, performance, checklist |
 | Gold Standard Prompt | Prompt maestro de 11 fases para generación de pantallas |
+| Working Rules (v3.2.2) | Reglas de trabajo: estructura plana, dónde van los tokens, estados, accesibilidad medida, revisión obligatoria y limitaciones conocidas de componentes |
 
 ## Flujo de uso
 
@@ -90,4 +91,4 @@ https://www.figma.com/design/LnYUTRFuwWpI9phwDCSHOx/Prisma-Components
 
 ## Versión
 
-v3.2.1 · Octubre 2026 · Whitelabel UX Team · Cencosud
+v3.2.2 · Octubre 2026 · Whitelabel UX Team · Cencosud
