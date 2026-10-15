@@ -41,8 +41,13 @@ mkdir -p "$OUTPUT_DIR"
 STAGE=$(mktemp -d)
 cp -r "${PLUGIN_NAME}" "${STAGE}/"
 mkdir -p "${STAGE}/${PLUGIN_NAME}/prisma-mcp"
-cp -r prisma-mcp/src prisma-mcp/package.json prisma-mcp/package-lock.json "${STAGE}/${PLUGIN_NAME}/prisma-mcp/"
-(cd "${STAGE}/${PLUGIN_NAME}/prisma-mcp" && npm ci --omit=dev --silent)
+# Bundle en un solo archivo (sin node_modules: las rutas con "@" invalidan el zip en Cowork)
+MCP_DIR="${STAGE}/${PLUGIN_NAME}/prisma-mcp"
+mkdir -p "${MCP_DIR}/src"
+cp prisma-mcp/src/*.json "${MCP_DIR}/src/"
+(cd prisma-mcp && npx --yes esbuild@0.24.0 src/index.js --bundle --platform=node --format=esm \
+  --banner:js="import{createRequire as __cr}from'module';const require=__cr(import.meta.url);" \
+  --outfile="${MCP_DIR}/src/index.js" --log-level=warning)
 OUTPUT_ABS="${STAGE}/out.plugin"
 (cd "${STAGE}" && zip -qr "${OUTPUT_ABS}" "${PLUGIN_NAME}/" \
   --exclude "*.DS_Store" \
